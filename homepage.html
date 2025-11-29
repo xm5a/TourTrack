@@ -307,7 +307,7 @@
                 <div class="panel alerts-panel">
                     <div class="panel-header">Live Alerts Feed</div>
                     <div class="alerts-feed">
-                        <div class="alert-item">
+                        <!--<div class="alert-item">
                             <div class="alert-icon alert-critical-text"><i class="fa-solid fa-tower-broadcast"></i></div>
                             <div class="alert-details">
                                 <p>SOS Panic Button</p>
@@ -327,7 +327,7 @@
                                 <p>Route Deviation Detected</p>
                                 <span>ID: 1A2B3C4D - 5 minutes ago</span>
                             </div>
-                        </div>
+                        </div>-->
                     </div>
                 </div>
 
@@ -377,39 +377,71 @@ function updateTouristCountDisplay() {
         console.error("HTML element with ID 'activetcount' not found.");
     }
 }
+
+const MAX_ALERTS = 10;
+        
+function insertAlert(type, touristId) {
+    const feed = document.querySelector('.alerts-feed');
+    if (!feed) return; // Exit if the feed element isn't found
+
+    let iconClass = '';
+    let alertText = '';
+    let alertColorClass = '';
+    let alertTime = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    if (type === 'add') {
+        iconClass = 'fa-solid fa-plus';
+        alertText = `NEW Tourist Detected`;
+        alertColorClass = 'alert-info-text';
+    } else if (type === 'remove') {
+        iconClass = 'fa-solid fa-minus';
+        alertText = `Tourist Removed`;
+        alertColorClass = 'alert-critical-text'; // Use critical to highlight removal
+    } else {
+        return;
+    }
+
+    
+    // Create the new alert HTML structure
+    const newAlertHTML = `
+        <div class="alert-item">
+            <div class="alert-icon ${alertColorClass}">
+                <i class="${iconClass}"></i>
+            </div>
+            <div class="alert-details">
+                <p>${alertText}</p>
+                <span>ID: ${touristId} - ${alertTime}</span>
+            </div>
+        </div>
+    `;
+
+    // 1. Insert the new alert at the top of the feed (prepend)
+    feed.insertAdjacentHTML('afterbegin', newAlertHTML);
+
+    // 2. Manage Feed size: Remove the oldest alert if the limit is exceeded
+    while (feed.children.length > MAX_ALERTS) {
+        // Remove the last child (the oldest item)
+        feed.lastElementChild.remove();
+    }
+}
         
 function updateMapMarker(touristId, lat, lon, status) { 
-    // ... (Your coordinates, popupText, etc. logic)
-    const coordinates = [lon, lat]; 
-
+    const coordinates = [lon, lat];
     
-
-    // 1. Calculate the Geofence Status
-
-    //const geoFncPosStat = getGeofenceStatus(lat, lon);
-
-    
-
     // 2. Combine the status for the popup text
-
     const popupText = 
-
         `Tourist ID: ${touristId}\n` +
-
         `Location: ${lat.toFixed(6)}, ${lon.toFixed(6)}\n` +
-
-        //`Geofence Status: ${geoFncPosStat}\n` +
-
-        `API Status: ${status || 'N/A'}`; // Include API status from the backend
+        `API Status: ${status || 'N/A'}`; 
     
     if (touristId in touristMarkers) {
-        // --- MODIFIED EXISTING MARKER (No count change needed) ---
+        // --- MODIFIED EXISTING MARKER ---
         touristMarkers[touristId].marker.setLngLat(coordinates);
         touristMarkers[touristId].popup.setText(popupText);
         console.log(`Updated marker and popup for ${touristId}`);
 
     } else {
-        // --- ADDED NEW MARKER (Count change is needed) ---
+        // --- ADDED NEW MARKER ---
         const popup = new maplibregl.Popup({ offset: 25 }).setText(popupText);
         const marker = new maplibregl.Marker({ color: status === 'MISSING' ? 'red' : 'blue' })
             .setLngLat(coordinates)
@@ -425,12 +457,13 @@ function updateMapMarker(touristId, lat, lon, status) {
         map.flyTo({
             center: coordinates,
             zoom: 14,
-            speed: 1.5 
+            speed: 1.5
         });
+        
+        // 🚨 NEW ALERT ADDITION
+        insertAlert('add', touristId);
     }
     
-    // 💥 CALL THE UPDATE FUNCTION HERE (Runs when marker is ADDED or MODIFIED)
-    // It is essential when ADDED, and harmless when MODIFIED.
     updateTouristCountDisplay(); 
 }
 function removeMapMarker(touristId) {
@@ -439,7 +472,9 @@ function removeMapMarker(touristId) {
         delete touristMarkers[touristId];
         console.log(`Marker and popup removed for ${touristId}`);
         
-        // 💥 CALL THE UPDATE FUNCTION HERE (Runs when marker is REMOVED)
+        // 🚨 NEW ALERT ADDITION
+        insertAlert('remove', touristId);
+        
         updateTouristCountDisplay(); 
     }
 }
@@ -470,6 +505,7 @@ onSnapshot(touristCollection, (snapshot) => {
 </body>
 
 </html>
+
 
 
 
