@@ -277,7 +277,7 @@
                     <div class="stat-card">
                         <div class="icon users"><i class="fa-solid fa-users"></i></div>
                         <div class="info">
-                            <h3 id="activetcount">null</h3>
+                            <h3 id="activetcount">No Value</h3>
                             <p>Active Tourists</p>
                         </div>
                     </div>
@@ -363,47 +363,38 @@
 const db = getFirestore(app);
         const touristMarkers = {};
         const TOURIST_COLLECTION_PATH = "tourists";
+
+/**
+ * Updates the 'Active Tourists' count in the HTML based on the touristMarkers object size.
+ */
+function updateTouristCountDisplay() {
+    const no_of_tourists = Object.keys(touristMarkers).length;
+    const countElement = document.getElementById("activetcount");
+    if (countElement) {
+        countElement.innerText = no_of_tourists;
+        console.log("Current active tourist count:", no_of_tourists);
+    } else {
+        console.error("HTML element with ID 'activetcount' not found.");
+    }
+}
         
-        function updateMapMarker(touristId, lat, lon, status) { 
-    const coordinates = [lon, lat]; 
-    
-    // 1. Calculate the Geofence Status
-    //const geoFncPosStat = getGeofenceStatus(lat, lon);
-    
-    // 2. Combine the status for the popup text
-    const popupText = 
-        `Tourist ID: ${touristId}\n` +
-        `Location: ${lat.toFixed(6)}, ${lon.toFixed(6)}\n` +
-        //`Geofence Status: ${geoFncPosStat}\n` +
-        `API Status: ${status || 'N/A'}`; // Include API status from the backend
+function updateMapMarker(touristId, lat, lon, status) { 
+    // ... (Your coordinates, popupText, etc. logic)
     
     if (touristId in touristMarkers) {
-        // --- UPDATE EXISTING MARKER ---
-        
-        // A. Update Marker Position
+        // --- MODIFIED EXISTING MARKER (No count change needed) ---
         touristMarkers[touristId].marker.setLngLat(coordinates);
-        
-        // B. **CRITICAL FIX: Update the Popup text using the stored popup reference**
         touristMarkers[touristId].popup.setText(popupText);
-
         console.log(`Updated marker and popup for ${touristId}`);
 
-        let no_of_tourists = Object.keys(touristMarkers).length;
-        document.getElementById("activetcount").innerText = no_of_tourists;
-
     } else {
-        // --- CREATE NEW MARKER ---
-        
-        // Create the Popup instance first
+        // --- ADDED NEW MARKER (Count change is needed) ---
         const popup = new maplibregl.Popup({ offset: 25 }).setText(popupText);
-        
-        // Create the Marker instance and attach the popup
         const marker = new maplibregl.Marker({ color: status === 'MISSING' ? 'red' : 'blue' })
             .setLngLat(coordinates)
             .setPopup(popup) 
             .addTo(map);
             
-        // 3. Store the Marker AND the Popup reference in the centralized object
         touristMarkers[touristId] = {
             marker: marker,
             popup: popup
@@ -411,25 +402,26 @@ const db = getFirestore(app);
         
         console.log(`New marker added for ${touristId}`);
         map.flyTo({
-            center: coordinates, 
-            zoom: 14,             
-            speed: 1.5            
+            center: coordinates,
+            zoom: 14,
+            speed: 1.5 
         });
     }
-}
     
-/**
- * Removes a map marker for a specific tourist ID.
- * @param {string} touristId - The ID of the tourist.
- */
+    // 💥 CALL THE UPDATE FUNCTION HERE (Runs when marker is ADDED or MODIFIED)
+    // It is essential when ADDED, and harmless when MODIFIED.
+    updateTouristCountDisplay(); 
+}
 function removeMapMarker(touristId) {
     if (touristId in touristMarkers) {
-        touristMarkers[touristId].marker.remove(); // Use the stored marker object
+        touristMarkers[touristId].marker.remove();
         delete touristMarkers[touristId];
         console.log(`Marker and popup removed for ${touristId}`);
+        
+        // 💥 CALL THE UPDATE FUNCTION HERE (Runs when marker is REMOVED)
+        updateTouristCountDisplay(); 
     }
 }
-
 // --- REAL-TIME DATA LISTENER ---
 const touristCollection = collection(db, TOURIST_COLLECTION_PATH);
     
@@ -457,6 +449,7 @@ onSnapshot(touristCollection, (snapshot) => {
 </body>
 
 </html>
+
 
 
 
