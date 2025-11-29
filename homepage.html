@@ -388,7 +388,8 @@ const db = getFirestore(app);
 
         console.log(`Updated marker and popup for ${touristId}`);
 
-        document.getElementById("activetcount").innerText = touristMarkers.length;
+        let no_of_tourists = Object.keys(touristMarkers).length;
+        document.getElementById("activetcount").innerText = no_of_tourists;
 
     } else {
         // --- CREATE NEW MARKER ---
@@ -456,6 +457,7 @@ onSnapshot(touristCollection, (snapshot) => {
 </body>
 
 </html>
+
 
 
 
