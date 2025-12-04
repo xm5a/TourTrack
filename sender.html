@@ -62,12 +62,11 @@
                 screen.colorDepth,
                 new Date().getTimezoneOffset(),
                 navigator.language,
-                navigator.platform,
                 // Use a simplified userAgent to avoid browser-specific version numbers
             ];
             
             // Create a stable string from components
-            const fingerprintString = components.join('|');
+            const fingerprintString = components.join('-');
             
             // Hash the fingerprint to create a hex ID
             const encoder = new TextEncoder();
