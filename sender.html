@@ -37,7 +37,7 @@
     <script>
         // Use a dedicated DELETE/STOP endpoint for cleaner backend logic
         const API_URL_UPDATE = "https://a7d64c80-f620-40d1-be03-4ed7af8374ae-00-6mjphf1eg2nq.kirk.repl.co/update";
-        const API_URL_STOP = "https://a7d64c80-f620-40d1-be03-4ed7af8374ae-00-6mjphf1eg2nq.kirk.repl.co/stop_tracking"; // <<< NEW ENDPOINT FOR STOP SIGNAL
+        const API_URL_STOP = "https://a7d64c80-f620-40d1-be03-4ed7af8374ae-00-6mjphf1eg2nq.kirk.repl.co/stop_tracking";
 
         const STATUS_READY = "Ready. Click 'Start Sending Location' to begin.";
         const STATUS_TRACKING = "Tracking location in real-time (sending every 10s)...";
@@ -47,20 +47,52 @@
         
         let touristId = '';
         let isTracking = false;
-        let watchId = null; // Stores the ID returned by navigator.geolocation.watchPosition
+        let watchId = null;
         
         const trackingButton = document.getElementById('tracking-button');
         const statusDisplay = document.getElementById('status');
         const locationDisplay = document.getElementById('location-display');
 
+        // --- DEVICE FINGERPRINTING FOR CROSS-BROWSER ID ---
+        async function generateDeviceFingerprint() {
+            // Collect stable device characteristics
+            const components = [
+                navigator.hardwareConcurrency || 'unknown',
+                navigator.deviceMemory || 'unknown',
+                screen.width,
+                screen.height,
+                screen.colorDepth,
+                new Date().getTimezoneOffset(),
+                navigator.language,
+                navigator.platform,
+                // Use a simplified userAgent to avoid browser-specific version numbers
+                navigator.userAgent.replace(/[\d.]+/g, 'X')
+            ];
+            
+            // Create a stable string from components
+            const fingerprintString = components.join('|');
+            
+            // Hash the fingerprint to create a hex ID
+            const encoder = new TextEncoder();
+            const data = encoder.encode(fingerprintString);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            // Return first 16 characters (similar to UUID format)
+            return hashHex.substring(0, 16);
+        }
+
         // --- 1. ID GENERATION AND INITIALIZATION ---
-        function initializeTouristId() {
-            const existingId = localStorage.getItem('touristId');
+        async function initializeTouristId() {
+            // Try to get from localStorage first (for consistency within same browser)
+            let existingId = localStorage.getItem('touristId');
             
             if (existingId) {
                 touristId = existingId;
             } else {
-                touristId = crypto.randomUUID(); 
+                // Generate ID based on device fingerprint (works across browsers)
+                touristId = await generateDeviceFingerprint();
                 localStorage.setItem('touristId', touristId);
             }
             
@@ -82,7 +114,6 @@
                 tourist_id: touristId,
                 latitude: lat,
                 longitude: lon,
-                // Add an explicit action for clarity on the backend
                 action: 'update'
             };
 
@@ -97,7 +128,6 @@
 
                 if (!response.ok) {
                     console.error('Server error:', response.status);
-                    // Optionally update status to warn user of connection issues
                 }
 
             } catch (error) {
@@ -112,14 +142,12 @@
 
             const payload = {
                 tourist_id: touristId,
-                // Add an explicit action for clarity on the backend
                 action: 'delete' 
             };
 
             try {
-                // Send a DELETE signal to the backend (or POST to the /stop_tracking endpoint)
                 const response = await fetch(API_URL_STOP, {
-                    method: 'POST', // Using POST is safer for cross-origin than DELETE
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
@@ -135,7 +163,6 @@
 
             } catch (error) {
                 console.error('Stop signal network error:', error);
-                // Even if signal fails, we stop client-side tracking
                 statusDisplay.textContent = STATUS_STOPPED + " (Signal Failed)";
             }
         }
@@ -145,7 +172,6 @@
             console.error('Geolocation Error:', error);
             statusDisplay.textContent = `${STATUS_ERROR} (Code: ${error.code})`;
             
-            // Stop tracking if a persistent error occurs
             if (isTracking) {
                 stopTracking();
             }
@@ -158,37 +184,31 @@
                 return;
             }
 
-            // A. Update UI
             trackingButton.textContent = 'Stop Tracking';
             trackingButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
             trackingButton.classList.add('bg-red-600', 'hover:bg-red-700');
             statusDisplay.textContent = STATUS_TRACKING;
             isTracking = true;
 
-            // B. Fix: Use watchPosition correctly
-            // watchPosition sends updates whenever the browser detects a change, 
-            // usually every few seconds, which is more efficient than setInterval.
             watchId = navigator.geolocation.watchPosition(
                 sendLocation, 
                 handleError, 
                 {
                     enableHighAccuracy: true,
-                    maximumAge: 5000, // Accept 5-second old cache
-                    timeout: 7000     // Wait 7 seconds before timing out
+                    maximumAge: 5000,
+                    timeout: 7000
                 }
             );
         }
 
         function stopTracking() {
             if (watchId !== null) {
-                navigator.geolocation.clearWatch(watchId); // Stop the geolocation updates
+                navigator.geolocation.clearWatch(watchId);
                 watchId = null;
             }
 
-            // A. Send signal to backend to remove marker
             signalStopTracking();
 
-            // B. Update UI
             trackingButton.textContent = 'Start Sending Location';
             trackingButton.classList.remove('bg-red-600', 'hover:bg-red-700');
             trackingButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
@@ -208,15 +228,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             initializeTouristId();
             
-            // Attach the toggle function to the single button
             trackingButton.addEventListener('click', toggleTracking);
         });
 
-        // OPTIONAL: Try to send a stop signal if the user closes the tab/app cleanly
         window.addEventListener('beforeunload', () => {
              if (isTracking) {
-                 // Note: Fetch requests here are unreliable, but better than nothing
-                 // This is why inactivity detection (Method 1) is still best!
                  signalStopTracking(); 
              }
         });
