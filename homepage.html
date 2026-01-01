@@ -336,11 +336,35 @@
     </div>
     <script type = "module">
   const map = new maplibregl.Map({
-    style: 'https://tiles.openfreemap.org/styles/liberty',
-    center: [13.388, 52.517],
-    zoom: 9.5,
-    container: 'map-container',
-  })
+            container: 'map',
+            style: {
+                version: 8,
+                sources: {
+                    'carto-tiles': {
+                        type: 'raster',
+                        tiles: [
+                            'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                            'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                            'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+                        ],
+                        tileSize: 256,
+                        attribution: '© CARTO'
+                    }
+                },
+                layers: [
+                    {
+                        id: 'simple-tiles',
+                        type: 'raster',
+                        source: 'carto-tiles',
+                        minzoom: 0,
+                        maxzoom: 22
+                    }
+                ]
+            },
+            center: startLngLat,
+            zoom: 14,
+            attributionControl: false
+        });
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
@@ -505,6 +529,7 @@ onSnapshot(touristCollection, (snapshot) => {
 </body>
 
 </html>
+
 
 
 
