@@ -178,7 +178,7 @@
             </div>
             <div class="modal-footer">
                  <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                 <button class="btn btn-primary" onclick="closeModal()">Save Zone</button>
+                 <button class="btn btn-primary" onclick="closeModal()" id="CreateGeofence">Save Zone</button>
             </div>
         </div>
     </div>
@@ -226,8 +226,9 @@ const map = Radar.ui.map({
 map.addControl(draw);
 
 // 2. Enable button only when name is present
-const nameInput = document.getElementById('fenceName');
-const drawBtn = document.getElementById('drawBtn');
+const nameInput = document.getElementById('zone-name');
+const riskInput = document.getElementById('zone-risk');
+const drawBtn = document.getElementById('CreateGeofence');
 
 nameInput.addEventListener('input', () => {
   drawBtn.disabled = nameInput.value.trim() === '';
@@ -241,11 +242,12 @@ drawBtn.addEventListener('click', () => {
 // 4. Handle Completion
 map.on('draw.create', async (e) => {
   const name = nameInput.value;
+    const risk = riskInput.value;
   const feature = e.features[0];
   const coordinates = feature.geometry.coordinates;
 
   // Save to Radar (Pseudo-code for Radar API)
-  const newGeofence = await saveToRadar(name, coordinates);
+  const newGeofence = await saveToRadar(name, risk, coordinates);
 
   // 5. Fly to the new Geofence
   const bounds = getBounds(coordinates); // Helper to find center/envelope
@@ -264,6 +266,7 @@ map.on('draw.create', async (e) => {
     </script>
 </body>
 </html>
+
 
 
 
