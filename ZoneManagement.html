@@ -128,7 +128,7 @@
                         </div>
                     </div>
                     <ul class="zone-list">
-                        <li class="zone-item">
+                    <!-- <li class="zone-item">
                             <div class="zone-info">
                                 <h3>Border Checkpoint Area</h3>
                                 <span class="zone-status status-prohibited">Prohibited Zone</span>
@@ -147,7 +147,7 @@
                                 <button onclick="openModal()"><i class="fa-solid fa-pencil"></i></button>
                                 <button><i class="fa-solid fa-trash"></i></button>
                             </div>
-                        </li>
+                        </li>-->
                     </ul>
                 </aside>
             </div>
@@ -186,92 +186,82 @@
     </div>
     
     <script type = 'text/javascript'>
-        //import Radar from '/radar-sdk-js';
-        //import 'radar-sdk-js/dist/radar.css';
-        Radar.initialize('prj_test_pk_9ecb50024e28cc6720ebc1af765b10b4d7a4bf61');
-        // 1. Initialize with your key
-// 2. Identify the user (optional, but good for logs)
-Radar.setUserId('tourist_123'); 
-const map = Radar.ui.map({
-        container: 'map-overlay', // OR document.getElementById('map')
-        style: 'radar-default-v1',
-        center: [-73.9911, 40.7342], // NYC
-        zoom: 14,
-      });
-// 3. Check location
-/*function checkGeofence() {
-    Radar.trackOnce(function(err, result) {
-        if (!err) {
-            // "geofences" is an array of fences the user is currently INSIDE
-            const geofences = result.geofences;
+// Initialize Radar
+Radar.initialize('prj_test_pk_9ecb50024e28cc6720ebc1af765b10b4d7a4bf61');
 
-            if (geofences && geofences.length > 0) {
-                // User is inside a geofence!
-                const fenceName = geofences[0].description;
-                alert(`Welcome to ${fenceName}!`);
-                
-                // You can also push this to your Alert History here
-                addToHistory(fenceName); 
-            } else {
-                console.log("User is not in any geofence.");
-            }
-        } else {
-            console.error("Error getting location:", err);
-        }
-    });
-}*/
-        function CreateGeofence(){
-            modal.style.display = 'none';
-            const draw = new MapboxDraw({
-  displayControlsDefault: false,
-  controls: { polygon: true, trash: true }
+// Initialize Map
+const map = Radar.ui.map({
+    container: 'map-overlay',
+    style: 'radar-default-v1',
+    center: [-73.9911, 40.7342], 
+    zoom: 14,
+});
+
+// Initialize Draw Tool
+const draw = new MapboxDraw({
+    displayControlsDefault: false,
+    controls: {
+        polygon: true,
+        trash: true
+    },
+    defaultMode: 'simple_select'
 });
 map.addControl(draw);
 
-// 2. Enable button only when name is present
-const nameInput = document.getElementById('zone-name');
-const riskInput = document.getElementById('zone-risk');
-const drawBtn = document.getElementById('CreateGeofence');
-const zl = document.getElementById('zone-list')
-  drawBtn.disabled = nameInput.value.trim() === '';
+// UI Elements
+const modal = document.getElementById('zone-modal');
+const zoneList = document.querySelector('.zone-list');
+
+function openModal() { modal.style.display = 'flex'; }
+function closeModal() { modal.style.display = 'none'; }
+
+async function CreateGeofence() {
+    const name = document.getElementById('zone-name').value;
+    const risk = document.getElementById('zone-risk').value;
+
+    if (!name) {
+        alert("Please enter a zone name");
+        return;
+    }
+
+    // 1. Close Modal and trigger Draw Mode
+    closeModal();
+    draw.changeMode('draw_polygon');
+    
+    alert("Click on the map to start drawing your zone.");
+
+    // 2. Listen for the completion of the drawing
+    map.once('draw.create', (e) => {
+        const feature = e.features[0];
+        
+        // Add to UI list
+        const newZoneItem = document.createElement('li');
+        newZoneItem.className = 'zone-item';
+        newZoneItem.innerHTML = `
+            <div class="zone-info">
+                <h3>${name}</h3>
+                <span class="zone-status status-${risk}">${risk.charAt(0).toUpperCase() + risk.slice(1)} Zone</span>
+            </div>
+            <div class="zone-actions">
+                <button><i class="fa-solid fa-pencil"></i></button>
+                <button onclick="this.closest('li').remove()"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        `;
+        zoneList.appendChild(newZoneItem);
+
+        // Here you would typically send 'feature.geometry' to your backend or Radar API
+        console.log("Geofence Created:", name, feature.geometry.coordinates);
+    });
 }
 
-// 3. Start Drawing
-drawBtn.addEventListener('click', () => {
-    const newZone = document.createElement('li')
-    newZone.setAttribute('class','zone-item');
-    newZone.innerHTML = '<div class="zone-info"><h3>Border Checkpoint Area</h3><span class="zone-status status-prohibited">Prohibited Zone</span></div><div class="zone-actions"><button onclick="openModal()"><i class="fa-solid fa-pencil"></i></button><button><i class="fa-solid fa-trash"></i></button></div>';
-    zl.appendChild(newZone);
-  draw.changeMode('draw_polygon');
-});
-
-// 4. Handle Completion
-map.on('draw.create', async (e) => {
-  const name = nameInput.value;
-    const risk = riskInput.value;
-  const feature = e.features[0];
-  const coordinates = feature.geometry.coordinates;
-
-  // Save to Radar (Pseudo-code for Radar API)
-  const newGeofence = await saveToRadar(name, risk, coordinates);
-
-  // 5. Fly to the new Geofence
-  const bounds = getBounds(coordinates); // Helper to find center/envelope
-  map.flyTo({
-    center: bounds.center,
-    zoom: 15,
-    essential: true
-  });
-});
-        }
-            
-        const modal = document.getElementById('zone-modal');
-        function openModal() { modal.style.display = 'flex'; }
-        function closeModal() { modal.style.display = 'none'; }
-        window.onclick = function(event) { if (event.target == modal) { closeModal(); } }
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target == modal) { closeModal(); }
+}
     </script>
 </body>
 </html>
+
 
 
 
