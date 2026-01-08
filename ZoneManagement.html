@@ -234,7 +234,7 @@ const riskInput = document.getElementById('zone-risk');
 const drawBtn = document.getElementById('CreateGeofence');
 const zl = document.getElementById('zone-list')
   drawBtn.disabled = nameInput.value.trim() === '';
-});
+}
 
 // 3. Start Drawing
 drawBtn.addEventListener('click', () => {
@@ -272,6 +272,7 @@ map.on('draw.create', async (e) => {
     </script>
 </body>
 </html>
+
 
 
 
