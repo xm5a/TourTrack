@@ -124,7 +124,7 @@
                         <h1>Manage Zones</h1>
                         <p>Create, edit, and manage geo-fenced areas.</p>
                         <div class="panel-actions">
-                            <button class="btn btn-primary" onclick="CreateGeofence()"><i class="fa-solid fa-plus"></i> Create New Zone</button>
+                            <button class="btn btn-primary" onclick="openModal()"><i class="fa-solid fa-plus"></i> Create New Zone</button>
                         </div>
                     </div>
                     <ul class="zone-list">
@@ -159,7 +159,7 @@
         <div class="modal-panel">
             <div class="modal-header">
                 <h2>Create Zone</h2>
-                <button class="modal-close-btn" onclick="CreateGeofence()">&times;</button>
+                <button class="modal-close-btn" onclick="closeModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <form>
@@ -261,6 +261,7 @@ window.onclick = function(event) {
     </script>
 </body>
 </html>
+
 
 
 
