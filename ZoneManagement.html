@@ -186,6 +186,7 @@
     </div>
     
     <script type = 'text/javascript'>
+        let modal = document.getElementById('zone-modal');
 // Initialize Radar
 Radar.initialize('prj_test_pk_9ecb50024e28cc6720ebc1af765b10b4d7a4bf61');
 
@@ -209,7 +210,6 @@ const draw = new MapboxDraw({
 map.addControl(draw);
 
 // UI Elements
-const modal = document.getElementById('zone-modal');
 const zoneList = document.querySelector('.zone-list');
 
 function openModal() { modal.style.display = 'flex'; }
@@ -261,6 +261,7 @@ async function CreateGeofence() {
     </script>
 </body>
 </html>
+
 
 
 
