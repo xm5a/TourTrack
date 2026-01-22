@@ -246,7 +246,7 @@ async function CreateGeofence() {
             </div>
             <div class="zone-actions">
                 <button><i class="fa-solid fa-pencil"></i></button>
-                <button onclick="this.closest('li').remove()"><i class="fa-solid fa-trash"></i></button>
+                <button onclick="removefence(name)"><i class="fa-solid fa-trash"></i></button>
             </div>
         `;
         zoneList.appendChild(newZoneItem);
@@ -260,9 +260,15 @@ async function CreateGeofence() {
 /*window.onclick = function(event) {
     if (event.target == modal) { closeModal(); }
 }*/
+
+        function removefence(featurename){
+            this.closest('li').remove();
+            draw.delete(featurename);
+        }
     </script>
 </body>
 </html>
+
 
 
 
