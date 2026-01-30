@@ -272,6 +272,17 @@
                     
                     feature.geometry.coordinates[0] = ring;*/
 
+                    const first = ring[0];
+                const last = ring[ring.length - 1];
+                
+                if (first[0] !== last[0] || first[1] !== last[1]) {
+                    ring.push(first);
+                    console.log("Auto-closed polygon loop");
+                }
+                
+                // Save fixed coordinates back to feature
+                feature.geometry.coordinates[0] = ring;
+                    
                     // SEND TO RADAR
                     const externalId = 'zone-' + Date.now();
                     const tag = 'safety-zone';
@@ -333,6 +344,7 @@
     </script>
 </body>
 </html>
+
 
 
 
