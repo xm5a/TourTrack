@@ -228,8 +228,8 @@
                 
                 // Wait for draw completion
                 map.once('draw.create', async (e) => {
-                    const feature = e.features[0];
-                    let ring = feature.geometry.coordinates[0];
+                    const feature = e.features;
+                    let ring = feature.geometry.coordinates;
 
                     // VALIDATION
                     if (ring.length < 3) {
@@ -309,3 +309,4 @@
     </script>
 </body>
 </html>
+
