@@ -5,127 +5,75 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zone Management - Command Center</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <link href="https://js.radar.com/v4/radar.css" rel="stylesheet">
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
-    <link href="https://js.radar.com/v4.5.3/radar.css" rel="stylesheet"/>
     <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css" />
 
     <style>
-        :root {
-            --bg-color: #f4f7fa;
-            --sidebar-bg: #1f2937;
-            --sidebar-text: #d1d5db;
-            --sidebar-hover: #374151;
-            --header-bg: #ffffff;
-            --card-bg: #ffffff;
-            --border-color: #e5e7eb;
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --accent-color: #2563eb;
-            --zone-prohibited-border: #dc2626;
-            --zone-high-risk-border: #d97706;
-        }
-
+        :root { --bg-color: #f4f7fa; --sidebar-bg: #1f2937; --sidebar-text: #d1d5db; --header-bg: #ffffff; --accent-color: #2563eb; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Roboto', sans-serif; background-color: var(--bg-color); color: var(--text-primary); display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+        body { font-family: 'Roboto', sans-serif; background-color: var(--bg-color); display: flex; height: 100vh; overflow: hidden; }
         
-        /* Layout */
-        .page-wrapper { display: flex; width: 100%; height: 100%; }
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100%; position: relative; }
-        
-        /* Sidebar */
-        .sidebar { width: 250px; background-color: var(--sidebar-bg); color: var(--sidebar-text); padding: 1.5rem 0; display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar-header { text-align: center; padding: 0 1.5rem 1.5rem 1.5rem; border-bottom: 1px solid var(--sidebar-hover); }
-        .sidebar-header h2 { font-size: 1.5rem; color: #fff; }
-        .sidebar-nav { flex-grow: 1; list-style: none; margin-top: 1rem; }
-        .sidebar-nav a { display: flex; align-items: center; padding: 1rem 1.5rem; color: var(--sidebar-text); text-decoration: none; font-weight: 500; }
-        .sidebar-nav a:hover, .sidebar-nav a.active { background-color: var(--sidebar-hover); color: #fff; }
-        .sidebar-nav a i { width: 20px; margin-right: 1rem; text-align: center; }
-        
-        /* Header */
-        .header { background-color: var(--header-bg); border-bottom: 1px solid var(--border-color); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-        .user-profile { display: flex; align-items: center; }
-        .user-profile span { margin-right: 1rem; font-weight: 500; }
-        .user-profile i { font-size: 1.5rem; color: var(--text-secondary); }
+        .page-wrapper { display: flex; width: 100%; }
+        .sidebar { width: 250px; background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 1.5rem; text-align: center; border-bottom: 1px solid #374151; }
+        .sidebar-header h2 { color: #fff; font-size: 1.5rem; }
+        .sidebar-nav { list-style: none; margin-top: 1rem; }
+        .sidebar-nav a { display: flex; align-items: center; padding: 1rem 1.5rem; color: inherit; text-decoration: none; }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background: #374151; color: #fff; }
+        .sidebar-nav i { width: 25px; }
 
-        /* Zone Management Layout */
-        .zone-container { display: flex; flex-grow: 1; height: 100%; overflow: hidden; position: relative; }
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; position: relative; }
+        .header { background: var(--header-bg); padding: 1rem 2rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
         
-        .map-panel { flex-grow: 1; position: relative; background-color: #e5e7eb; }
+        .zone-container { display: flex; flex-grow: 1; height: 100%; }
+        .map-panel { flex-grow: 1; position: relative; }
         .map-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
-        .management-panel { width: 400px; background-color: var(--card-bg); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0; z-index: 10; }
-        .panel-header { padding: 1.5rem; border-bottom: 1px solid var(--border-color); }
-        .panel-header h1 { font-size: 1.5rem; }
-        .panel-header p { color: var(--text-secondary); }
-        .panel-actions { margin-top: 1rem; }
+        .management-panel { width: 400px; background: #fff; border-left: 1px solid #e5e7eb; display: flex; flex-direction: column; z-index: 10; }
+        .panel-header { padding: 1.5rem; border-bottom: 1px solid #e5e7eb; }
+        .zone-list { flex-grow: 1; overflow-y: auto; list-style: none; }
+        .zone-item { padding: 1rem 1.5rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
         
-        .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; width: 100%; justify-content: center; }
-        .btn-primary { background-color: var(--accent-color); color: #fff; }
-        .btn-primary:hover { background-color: #1d4ed8; }
-        .btn-secondary { background-color: #e5e7eb; color: var(--text-primary); }
-
-        .zone-list { flex-grow: 1; overflow-y: auto; list-style: none; padding: 0; }
-        .zone-item { display: flex; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); }
-        .zone-info { flex-grow: 1; }
-        .zone-info h3 { font-size: 1.1rem; }
-        .zone-status { font-size: 0.875rem; font-weight: 600; }
-        .status-prohibited { color: var(--zone-prohibited-border); }
-        .status-high-risk { color: var(--zone-high-risk-border); }
+        .btn { padding: 0.6rem 1.2rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; }
+        .btn-primary { background: var(--accent-color); color: #fff; width: 100%; margin-top: 1rem; }
+        .btn-secondary { background: #e5e7eb; color: #000; }
         
-        .zone-actions button { background: none; border: none; cursor: pointer; color: var(--text-secondary); font-size: 1rem; padding: 0.5rem; }
-        .zone-actions button:hover { color: var(--zone-prohibited-border); }
-
         /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-panel { background-color: #fff; border-radius: 16px; width: 90%; max-width: 500px; }
-        .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .modal-close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-secondary); }
-        .modal-body { padding: 2rem; }
-        .form-group { margin-bottom: 1.5rem; }
-        .form-group label { display: block; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem; }
-        .form-group input, .form-group select { width: 100%; padding: 0.75rem 1rem; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; }
-        .modal-footer { padding: 1.5rem; border-top: 1px solid var(--border-color); text-align: right; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 9999; }
+        .modal-panel { background: #fff; width: 90%; max-width: 500px; border-radius: 12px; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .modal-footer { text-align: right; margin-top: 20px; }
     </style>
 </head>
 <body>
     <div class="page-wrapper">
         <nav class="sidebar">
-            <div class="sidebar-header"><h2><i class="fa-solid fa-shield-halved"></i> Safety Hub</h2></div>
+            <div class="sidebar-header"><h2>Safety Hub</h2></div>
             <ul class="sidebar-nav">
                 <li><a href="homepage.html"><i class="fa-solid fa-table-columns"></i> Dashboard</a></li>
-                <li><a href="Alert%20History.html"><i class="fa-solid fa-bullhorn"></i> Alert History</a></li>
-                <li><a href="TouristID.html"><i class="fa-solid fa-users"></i> Tourist IDs</a></li>
                 <li><a href="ZoneManagement.html" class="active"><i class="fa-solid fa-map-marked-alt"></i> Zone Management</a></li>
-                <li><a href="Reports.html"><i class="fa-solid fa-chart-line"></i> Reports</a></li>
             </ul>
         </nav>
 
         <main class="main-content">
             <header class="header">
                 <h1>Zone Management</h1>
-                <div class="user-profile">
-                    <span>Welcome, Admin</span><i class="fa-solid fa-user-circle"></i>
-                </div>
+                <span>Admin</span>
             </header>
             
             <div class="zone-container">
-                <div class="map-panel">
-                    <div id="map-overlay" class="map-overlay"></div>
-                </div>
-                
+                <div class="map-panel"><div id="map-overlay" class="map-overlay"></div></div>
                 <aside class="management-panel">
                     <div class="panel-header">
-                        <h1>Manage Zones</h1>
-                        <p>Create, edit, and manage geo-fenced areas.</p>
-                        <div class="panel-actions">
-                            <button class="btn btn-primary" onclick="openModal()"><i class="fa-solid fa-plus"></i> Create New Zone</button>
-                        </div>
+                        <h2>Manage Zones</h2>
+                        <button class="btn btn-primary" onclick="openModal()">+ New Zone</button>
                     </div>
-                    <ul class="zone-list">
-                        </ul>
+                    <ul class="zone-list"></ul>
                 </aside>
             </div>
         </main>
@@ -133,178 +81,139 @@
 
     <div id="zone-modal" class="modal-overlay">
         <div class="modal-panel">
-            <div class="modal-header">
-                <h2>Create Zone</h2>
-                <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+            <h2>Create Zone</h2>
+            <div class="form-group">
+                <label>Zone Name</label>
+                <input type="text" id="zone-name" placeholder="e.g. Danger Zone">
             </div>
-            <div class="modal-body">
-                <form onsubmit="return false;">
-                    <div class="form-group">
-                        <label for="zone-name">Zone Name</label>
-                        <input type="text" id="zone-name" placeholder="e.g., Dangerous Cliff Area">
-                    </div>
-                    <div class="form-group">
-                        <label for="zone-risk">Risk Level</label>
-                        <select id="zone-risk">
-                            <option value="high">High-Risk</option>
-                            <option value="prohibited">Prohibited</option>
-                            <option value="restricted">Restricted</option>
-                        </select>
-                    </div>
-                    <p class="text-secondary" style="font-size: 0.875rem;">After clicking "Save Zone", click on the map to draw the shape. Double-click to finish.</p>
-                </form>
+            <div class="form-group">
+                <label>Risk Level</label>
+                <select id="zone-risk">
+                    <option value="high">High Risk</option>
+                    <option value="prohibited">Prohibited</option>
+                </select>
             </div>
+            <p style="font-size: 0.9em; color: #666;">Click "Save" then draw a polygon on the map.</p>
             <div class="modal-footer">
-                 <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                 <button class="btn btn-primary" onclick="CreateGeofence()">Save Zone</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" style="width: auto;" onclick="startDrawing()">Save & Draw</button>
             </div>
         </div>
     </div>
-    
+
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
-    <script src="https://js.radar.com/v4.5.3/radar.min.js"></script>
+    <script src="https://js.radar.com/v4/radar.min.js"></script>
     <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
-    
-    <script type='text/javascript'>
-        const modal = document.getElementById('zone-modal');
-        const zoneList = document.querySelector('.zone-list');
-        
-        // --- CONFIGURATION ---
+
+    <script>
+        // CONFIGURATION
         const RADAR_PK = 'prj_test_pk_9ecb50024e28cc6720ebc1af765b10b4d7a4bf61';
         const RADAR_SK = 'prj_test_sk_58c48260ded3c530a5edbd545b54eba05bd771af';
 
-        // --- INITIALIZE ---
-        // Verify Radar is loaded before initializing
-        if (typeof Radar === 'undefined') {
-            alert("Error: Radar SDK failed to load. Please check your internet connection.");
-        } else {
-            Radar.initialize(RADAR_PK);
+        // 1. Initialize Radar
+        Radar.initialize(RADAR_PK);
 
-            const map = Radar.ui.map({
-                container: 'map-overlay',
-                style: 'radar-default-v1',
-                center: [72.978088, 19.218331],
-                zoom: 14,
+        // 2. Initialize Map
+        const map = Radar.ui.map({
+            container: 'map-overlay',
+            style: 'radar-default-v1',
+            center: [72.978088, 19.218331], // Thane
+            zoom: 13
+        });
+
+        // 3. Initialize Draw Tools
+        const draw = new MapboxDraw({
+            displayControlsDefault: false,
+            controls: { polygon: true, trash: true }
+        });
+        map.addControl(draw);
+
+        // UI Helpers
+        const modal = document.getElementById('zone-modal');
+        const zoneList = document.querySelector('.zone-list');
+        function openModal() { modal.style.display = 'flex'; }
+        function closeModal() { modal.style.display = 'none'; }
+
+        // 4. Start Drawing Flow
+        function startDrawing() {
+            const name = document.getElementById('zone-name').value;
+            if(!name) return alert("Enter a name");
+            
+            closeModal();
+            draw.changeMode('draw_polygon');
+            
+            // Wait for user to finish drawing
+            map.once('draw.create', async (e) => {
+                await saveZoneToRadar(e.features[0], name);
             });
+        }
 
-            const draw = new MapboxDraw({
-                displayControlsDefault: false,
-                controls: { polygon: true, trash: true },
-                defaultMode: 'simple_select'
-            });
-            map.addControl(draw);
-
-            // --- UI FUNCTIONS ---
-            window.openModal = function() { modal.style.display = 'flex'; }
-            window.closeModal = function() { modal.style.display = 'none'; }
-
-            // Helper to add zone to UI
-            window.addZoneToUI = function(name, risk, tag, externalId, mapId) {
-                const newZoneItem = document.createElement('li');
-                newZoneItem.className = 'zone-item';
-                newZoneItem.innerHTML = `
-                    <div class="zone-info">
-                        <h3>${name}</h3>
-                        <span class="zone-status status-${risk}">${risk.toUpperCase()} Zone</span>
-                    </div>
-                    <div class="zone-actions">
-                        <button onclick="removefence(this, '${tag}', '${externalId}', '${mapId}')" title="Delete Zone">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                `;
-                zoneList.appendChild(newZoneItem);
+        // 5. Save to API
+        async function saveZoneToRadar(feature, name) {
+            const risk = document.getElementById('zone-risk').value;
+            
+            // FIX: Close the polygon loop (A->B->C becomes A->B->C->A)
+            const coords = feature.geometry.coordinates[0];
+            const start = coords[0];
+            const end = coords[coords.length - 1];
+            
+            if (start[0] !== end[0] || start[1] !== end[1]) {
+                coords.push(start);
             }
+            feature.geometry.coordinates[0] = coords;
 
-            // --- CREATE GEOFENCE LOGIC ---
-            window.CreateGeofence = async function() {
-                const name = document.getElementById('zone-name').value;
-                const risk = document.getElementById('zone-risk').value;
+            // API Call
+            const tag = 'safety-zone';
+            const externalId = 'zone-' + Date.now();
 
-                if (!name) { alert("Please enter a zone name"); return; }
-
-                closeModal();
-                draw.changeMode('draw_polygon');
-                
-                // Wait for draw completion
-                map.once('draw.create', async (e) => {
-                    const feature = e.features[0];
-                    let ring = feature.geometry.coordinates[0];
-
-                    // VALIDATION
-                    if (ring.length < 3) {
-                        alert("Invalid Shape: You must draw a polygon (at least 3 corners).");
-                        draw.delete(feature.id);
-                        return;
-                    }
-
-                    // FIX: Force Close Polygon
-                    const first = ring[0];
-                    const last = ring[ring.length - 1];
-                    if (first[0] !== last[0] || first[1] !== last[1]) {
-                        ring.push(first);
-                        console.log("Auto-closed polygon loop");
-                    }
-                    
-                    feature.geometry.coordinates[0] = ring;
-
-                    // SEND TO RADAR
-                    const externalId = 'zone-' + Date.now();
-                    const tag = 'safety-zone';
-
-                    try {
-                        const response = await fetch(`https://api.radar.io/v1/geofences/${tag}/${externalId}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Authorization': RADAR_SK,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                description: name,
-                                type: 'polygon',
-                                coordinates: feature.geometry.coordinates,
-                                metadata: { riskLevel: risk }
-                            })
-                        });
-
-                        if (response.ok) {
-                            addZoneToUI(name, risk, tag, externalId, feature.id);
-                            console.log("Success: Zone created!");
-                        } else {
-                            const err = await response.json();
-                            alert("Radar API Error: " + err.meta.message);
-                            draw.delete(feature.id);
-                        }
-                    } catch (error) {
-                        console.error(error);
-                        alert("Network Error");
-                        draw.delete(feature.id);
-                    }
+            try {
+                const res = await fetch(`https://api.radar.io/v1/geofences/${tag}/${externalId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': RADAR_SK,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        description: name,
+                        type: 'polygon',
+                        coordinates: feature.geometry.coordinates,
+                        metadata: { riskLevel: risk }
+                    })
                 });
-            }
 
-            // --- DELETE LOGIC ---
-            window.removefence = async function(btn, tag, externalId, mapId) {
-                if(!confirm("Are you sure you want to delete this zone?")) return;
-
-                try {
-                    const response = await fetch(`https://api.radar.io/v1/geofences/${tag}/${externalId}`, {
-                        method: 'DELETE',
-                        headers: { 'Authorization': RADAR_SK }
-                    });
-
-                    if (response.ok) {
-                        const listItem = btn.closest('li');
-                        listItem.remove();
-                        if (mapId) draw.delete(mapId);
-                    } else {
-                        alert("Failed to delete.");
-                    }
-                } catch (e) {
-                    console.error(e);
-                    alert("Network error.");
+                if (res.ok) {
+                    addZoneToList(name, risk, tag, externalId, feature.id);
+                    console.log("Saved!");
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + err.meta.message);
+                    draw.delete(feature.id);
                 }
+            } catch (e) {
+                console.error(e);
+                alert("Network Error");
+                draw.delete(feature.id);
             }
+        }
+
+        function addZoneToList(name, risk, tag, id, drawId) {
+            const li = document.createElement('li');
+            li.className = 'zone-item';
+            li.innerHTML = `
+                <div><strong>${name}</strong><br><small>${risk}</small></div>
+                <button onclick="deleteZone(this, '${tag}', '${id}', '${drawId}')" style="color:red; background:none; border:none; cursor:pointer;"><i class="fa-solid fa-trash"></i></button>
+            `;
+            zoneList.appendChild(li);
+        }
+
+        window.deleteZone = async function(btn, tag, id, drawId) {
+            if(!confirm("Delete?")) return;
+            await fetch(`https://api.radar.io/v1/geofences/${tag}/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': RADAR_SK }
+            });
+            btn.closest('li').remove();
+            if(drawId) draw.delete(drawId);
         }
     </script>
 </body>
