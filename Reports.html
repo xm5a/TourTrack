@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports - Command Center</title>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Internal CSS -->
     <style>
         :root {
             --bg-color: #f4f7fa;
@@ -25,35 +22,25 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Roboto', sans-serif; background-color: var(--bg-color); color: var(--text-primary); display: flex; }
+        body { font-family: 'Roboto', sans-serif; background-color: var(--bg-color); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
         
-        /* --- Main Layout, Sidebar, Header (Consistent with other pages) --- */
-        .page-wrapper { display: flex; width: 100%; }
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; }
-        .sidebar { width: 250px; background-color: var(--sidebar-bg); color: var(--sidebar-text); padding: 1.5rem 0; display: flex; flex-direction: column; }
-        .sidebar-header { text-align: center; padding: 0 1.5rem 1.5rem 1.5rem; border-bottom: 1px solid var(--sidebar-hover); }
+        .page-wrapper { display: flex; width: 100%; height: 100%; }
+        .sidebar { width: 250px; background-color: var(--sidebar-bg); color: var(--sidebar-text); padding: 1.5rem 0; display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar-header { text-align: center; padding: 1.5rem; border-bottom: 1px solid var(--sidebar-hover); }
         .sidebar-header h2 { font-size: 1.5rem; color: #fff; }
         .sidebar-nav { flex-grow: 1; list-style: none; margin-top: 1rem; }
-        .sidebar-nav a { display: flex; align-items: center; padding: 1rem 1.5rem; color: var(--sidebar-text); text-decoration: none; font-weight: 500; }
+        .sidebar-nav a { display: flex; align-items: center; padding: 1rem 1.5rem; color: var(--sidebar-text); text-decoration: none; font-weight: 500; transition: 0.2s; }
         .sidebar-nav a:hover, .sidebar-nav a.active { background-color: var(--sidebar-hover); color: #fff; }
-        .sidebar-nav a i { width: 20px; margin-right: 1rem; text-align: center; }
-        .header { background-color: var(--header-bg); border-bottom: 1px solid var(--border-color); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-        .user-profile { display: flex; align-items: center; }
-        .user-profile span { margin-right: 1rem; font-weight: 500; }
-        .user-profile i { font-size: 1.5rem; color: var(--text-secondary); }
+        .sidebar-nav a i { width: 25px; margin-right: 1rem; text-align: center; }
+        
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .header { background-color: var(--header-bg); border-bottom: 1px solid var(--border-color); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .user-profile { display: flex; align-items: center; gap: 10px; font-weight: 500; }
 
-        /* --- Page Specific Styles --- */
         .content-container { padding: 2rem; }
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
         .page-header h1 { font-size: 1.75rem; }
-        .report-filters { display: flex; align-items: center; gap: 1rem; }
-        .date-picker { display: flex; align-items: center; gap: 0.5rem; }
-        .date-picker input { padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 8px; font-family: 'Roboto', sans-serif; font-size: 0.9rem; }
-        .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
-        .btn-primary { background-color: var(--accent-color); color: #fff; }
-        .btn-primary:hover { background-color: #1d4ed8; }
-
-        /* --- Reports Grid --- */
+        
         .reports-grid { display: grid; gap: 1.5rem; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
         
@@ -67,151 +54,100 @@
         .stat-card h3 { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
         .stat-card .value { font-size: 2.25rem; font-weight: 700; }
 
-        .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
-        
-        .chart-card {
+        /* Tables */
+        .table-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 1.5rem;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            overflow: hidden;
         }
-        .chart-card h3 { font-size: 1.2rem; margin-bottom: 1.5rem; }
-        .chart-placeholder {
-            height: 300px;
-            background-color: #f9fafb;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--text-secondary);
-            font-weight: 500;
-            border-radius: 8px;
-        }
-
-        .table-card {
-             background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            overflow: hidden; /* Important for border-radius on table */
-        }
-        .table-header { padding: 1.5rem; font-size: 1.2rem; font-weight: 700; }
+        .table-header { padding: 1.5rem; font-size: 1.2rem; font-weight: 700; border-bottom: 1px solid var(--border-color); }
         .data-table { width: 100%; border-collapse: collapse; }
         .data-table th, .data-table td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border-color); }
         .data-table thead { background-color: #f9fafb; }
         .data-table th { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
-        .data-table tbody tr:last-child td { border-bottom: none; }
-        .data-table tbody tr:hover { background-color: #f9fafb; }
-
-        @media (max-width: 992px) {
-            .charts-grid { grid-template-columns: 1fr; }
-        }
+        
+        /* Charts Placeholder */
+        .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+        .chart-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; }
+        .chart-placeholder { height: 250px; background-color: #f9fafb; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border-radius: 8px; }
     </style>
 </head>
 <body>
     <div class="page-wrapper">
-        <!-- Sidebar Navigation -->
         <nav class="sidebar">
-            <div class="sidebar-header"><h2><i class="fa-solid fa-shield-halved"></i> Safety Hub</h2></div>
+            <div class="sidebar-header">
+                <h2><i class="fa-solid fa-shield-halved"></i> Safety Hub</h2>
+            </div>
             <ul class="sidebar-nav">
-                <!-- Links updated -->
                 <li><a href="homepage.html"><i class="fa-solid fa-table-columns"></i> Dashboard</a></li>
                 <li><a href="Alert%20History.html"><i class="fa-solid fa-bullhorn"></i> Alert History</a></li>
                 <li><a href="TouristID.html"><i class="fa-solid fa-users"></i> Tourist IDs</a></li>
                 <li><a href="ZoneManagement.html"><i class="fa-solid fa-map-marked-alt"></i> Zone Management</a></li>
                 <li><a href="Reports.html" class="active"><i class="fa-solid fa-chart-line"></i> Reports</a></li>
-                <!-- Settings option removed -->
             </ul>
         </nav>
 
-        <!-- Main Content Area -->
         <main class="main-content">
             <header class="header">
                  <h1>Reports & Analytics</h1>
                 <div class="user-profile">
-                    <span>Welcome, Admin</span><i class="fa-solid fa-user-circle"></i>
+                    <span>Welcome, Admin</span>
+                    <i class="fa-solid fa-user-circle"></i>
                 </div>
             </header>
             
             <div class="content-container">
                 <div class="page-header">
-                    <div class="report-filters">
-                        <div class="date-picker">
-                            <label for="start-date">From:</label>
-                            <input type="date" id="start-date" name="start-date" value="2025-01-01">
-                        </div>
-                        <div class="date-picker">
-                            <label for="end-date">To:</label>
-                            <input type="date" id="end-date" name="end-date" value="2025-10-02">
-                        </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn" style="background:#e5e7eb" onclick="window.print()">
+                            <i class="fa-solid fa-print"></i> Print Report
+                        </button>
                     </div>
-                     <button class="btn btn-primary"><i class="fa-solid fa-download"></i> Download Report (PDF)</button>
                 </div>
 
                 <div class="reports-grid">
-                    <!-- Stat Cards -->
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <h3>Total Tourists (YTD)</h3>
-                            <p class="value">2,154</p>
+                            <h3>Total Tourists (All Time)</h3>
+                            <p class="value" id="total-tourists">Loading...</p>
                         </div>
                         <div class="stat-card">
-                            <h3>Total Alerts (YTD)</h3>
-                            <p class="value">87</p>
+                            <h3>Active Alerts (Current)</h3>
+                            <p class="value" id="total-alerts">0</p>
                         </div>
                         <div class="stat-card">
                             <h3>Avg. Safety Score</h3>
-                            <p class="value">8.2 / 10</p>
+                            <p class="value">9.4 / 10</p>
                         </div>
                     </div>
                     
-                    <!-- Charts -->
                     <div class="charts-grid">
                         <div class="chart-card">
                             <h3>Monthly Tourist Volume</h3>
-                            <div class="chart-placeholder"><i class="fa-solid fa-chart-line" style="margin-right: 10px;"></i> Line Chart Area</div>
+                            <div class="chart-placeholder"><i class="fa-solid fa-chart-line"></i> &nbsp; Chart Visualization Loading...</div>
                         </div>
                         <div class="chart-card">
                             <h3>Alerts by Type</h3>
-                            <div class="chart-placeholder"><i class="fa-solid fa-chart-pie" style="margin-right: 10px;"></i> Pie Chart Area</div>
+                            <div class="chart-placeholder"><i class="fa-solid fa-chart-pie"></i> &nbsp; Pie Chart Loading...</div>
                         </div>
                     </div>
 
-                    <!-- Data Table -->
-                     <div class="table-card">
-                        <div class="table-header">Recently Departed Tourists</div>
+                    <div class="table-card">
+                        <div class="table-header">Registered Tourist Database</div>
                         <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Tourist ID</th>
                                     <th>Name</th>
                                     <th>Nationality</th>
-                                    <th>Arrival</th>
-                                    <th>Departure</th>
+                                    <th>Coordinates</th>
+                                    <th>Status</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>1A2B3C4D</td>
-                                    <td>Anjali Mehta</td>
-                                    <td>Indian</td>
-                                    <td>Sep 25, 2025</td>
-                                    <td>Oct 01, 2025</td>
-                                </tr>
-                                 <tr>
-                                    <td>X9Y8Z7W6</td>
-                                    <td>Emily White</td>
-                                    <td>Canadian</td>
-                                    <td>Sep 20, 2025</td>
-                                    <td>Sep 30, 2025</td>
-                                </tr>
-                                <tr>
-                                    <td>Q1P2O3N4</td>
-                                    <td>Ken Tanaka</td>
-                                    <td>Japanese</td>
-                                    <td>Sep 18, 2025</td>
-                                    <td>Sep 28, 2025</td>
-                                </tr>
+                            <tbody id="report-table-body">
+                                <tr><td colspan="5" style="text-align:center; padding:1.5rem">Loading Live Data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -219,5 +155,92 @@
             </div>
         </main>
     </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+        // --- 1. CONFIGURATION ---
+       const firebaseConfig = {
+
+  apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
+
+  authDomain: "tour-track-ddb18.firebaseapp.com",
+
+  projectId: "tour-track-ddb18",
+
+  storageBucket: "tour-track-ddb18.firebasestorage.app",
+
+  messagingSenderId: "426865781508",
+
+  appId: "1:426865781508:web:8fb7a409f00c536955be51",
+
+  measurementId: "G-TQZT1H6PPS"
+
+};
+
+
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const TOURIST_COLLECTION = "users";
+
+        // --- 2. FETCH DATA FUNCTION ---
+        async function generateReport() {
+            try {
+                const querySnapshot = await getDocs(collection(db, TOURIST_COLLECTION));
+                const totalCount = querySnapshot.size;
+                
+                // Update Stat Card
+                document.getElementById('total-tourists').innerText = totalCount;
+
+                // Populate Table
+                const tableBody = document.getElementById('report-table-body');
+                let rows = '';
+                let sosCount = 0;
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const id = doc.id.substring(0,8) + "...";
+                    const name = data.name || "Unknown";
+                    const nat = "International"; // Placeholder as nat isn't in schema yet
+                    const coords = `${data.latitude?.toFixed(4) || 0}, ${data.longitude?.toFixed(4) || 0}`;
+                    const status = data.status || "Active";
+
+                    if(status === 'SOS') sosCount++;
+
+                    rows += `
+                        <tr>
+                            <td style="font-family:monospace; font-weight:bold">${id}</td>
+                            <td>${name}</td>
+                            <td>${nat}</td>
+                            <td>${coords}</td>
+                            <td>
+                                <span style="
+                                    padding: 4px 8px; 
+                                    border-radius: 12px; 
+                                    background: ${status === 'Active' ? '#dcfce7' : '#fee2e2'}; 
+                                    color: ${status === 'Active' ? '#166534' : '#991b1b'}; 
+                                    font-size: 0.85rem; font-weight: 600;">
+                                    ${status}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                // Update Table & Alert Stat
+                tableBody.innerHTML = rows || '<tr><td colspan="5" style="text-align:center">No records found.</td></tr>';
+                document.getElementById('total-alerts').innerText = sosCount;
+
+            } catch (error) {
+                console.error("Error fetching report data:", error);
+                document.getElementById('report-table-body').innerHTML = `<tr><td colspan="5" style="color:red; text-align:center">Error loading data: ${error.message}</td></tr>`;
+            }
+        }
+
+        // Run on load
+        generateReport();
+    </script>
 </body>
 </html>
