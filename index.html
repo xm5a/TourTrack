@@ -274,7 +274,7 @@
 
                     <p class="register-link">
                         Don't have an account? 
-                        <a href="https://www.xm5a.github.io/TourTrack/register.html">Register Now</a>
+                        <a id = "RegCause">Register Now</a>
                     </p>
                 </form>
             </div>
@@ -307,6 +307,7 @@
   const loginForm = document.querySelector('form'); // Select the <form> element
   const emailInput = document.getElementById("email");
   const passwordInput = document.getElementById("password");
+    const reglink = document.getElementById("RegCause");
 
   // 3. Add the event listener to the form submission
   loginForm.addEventListener('submit', (event) => {
@@ -340,9 +341,14 @@
         passwordInput.value = "";
       });
   });
+
+    reglink.addEventListener("click", (event) => {
+        window.location.href = "register.html";
+    });
 </script>
 </body>
 </html>
+
 
 
 
