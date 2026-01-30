@@ -6,6 +6,8 @@
     <title>Reports - Command Center</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         :root {
@@ -39,8 +41,9 @@
 
         .content-container { padding: 2rem; }
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
-        .page-header h1 { font-size: 1.75rem; }
-        
+        .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+        .btn-primary { background-color: var(--accent-color); color: #fff; }
+
         .reports-grid { display: grid; gap: 1.5rem; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
         
@@ -54,7 +57,18 @@
         .stat-card h3 { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
         .stat-card .value { font-size: 2.25rem; font-weight: 700; }
 
-        /* Tables */
+        /* Chart Containers */
+        .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+        .chart-card { 
+            background-color: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 12px; 
+            padding: 1.5rem;
+            height: 400px; /* Fixed height for charts */
+            position: relative;
+        }
+        
+        /* Table */
         .table-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -68,10 +82,9 @@
         .data-table thead { background-color: #f9fafb; }
         .data-table th { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
         
-        /* Charts Placeholder */
-        .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
-        .chart-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; }
-        .chart-placeholder { height: 250px; background-color: #f9fafb; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); border-radius: 8px; }
+        @media (max-width: 992px) {
+            .charts-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -110,27 +123,27 @@
                 <div class="reports-grid">
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <h3>Total Tourists (All Time)</h3>
+                            <h3>Total Tourists (Live)</h3>
                             <p class="value" id="total-tourists">Loading...</p>
                         </div>
                         <div class="stat-card">
-                            <h3>Active Alerts (Current)</h3>
-                            <p class="value" id="total-alerts">0</p>
+                            <h3>Active Alerts (SOS)</h3>
+                            <p class="value" id="total-alerts" style="color: #dc2626">0</p>
                         </div>
                         <div class="stat-card">
-                            <h3>Avg. Safety Score</h3>
-                            <p class="value">9.4 / 10</p>
+                            <h3>System Health</h3>
+                            <p class="value" style="color: #16a34a">98%</p>
                         </div>
                     </div>
                     
                     <div class="charts-grid">
                         <div class="chart-card">
                             <h3>Monthly Tourist Volume</h3>
-                            <div class="chart-placeholder"><i class="fa-solid fa-chart-line"></i> &nbsp; Chart Visualization Loading...</div>
+                            <canvas id="volumeChart"></canvas>
                         </div>
                         <div class="chart-card">
-                            <h3>Alerts by Type</h3>
-                            <div class="chart-placeholder"><i class="fa-solid fa-chart-pie"></i> &nbsp; Pie Chart Loading...</div>
+                            <h3>Live Status Breakdown</h3>
+                            <canvas id="statusChart"></canvas>
                         </div>
                     </div>
 
@@ -141,13 +154,12 @@
                                 <tr>
                                     <th>Tourist ID</th>
                                     <th>Name</th>
-                                    <th>Nationality</th>
                                     <th>Coordinates</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody id="report-table-body">
-                                <tr><td colspan="5" style="text-align:center; padding:1.5rem">Loading Live Data...</td></tr>
+                                <tr><td colspan="4" style="text-align:center; padding:1.5rem">Loading Live Data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -160,60 +172,90 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-        // --- 1. CONFIGURATION ---
-       const firebaseConfig = {
-
-  apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
-
-  authDomain: "tour-track-ddb18.firebaseapp.com",
-
-  projectId: "tour-track-ddb18",
-
-  storageBucket: "tour-track-ddb18.firebasestorage.app",
-
-  messagingSenderId: "426865781508",
-
-  appId: "1:426865781508:web:8fb7a409f00c536955be51",
-
-  measurementId: "G-TQZT1H6PPS"
-
-};
-
-
+        // CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyBinQO3_OZ4zozkvyC4litpysTy0MU0Dz4",
+            authDomain: "acrosecurity-c3c03.firebaseapp.com",
+            projectId: "acrosecurity-c3c03",
+            storageBucket: "acrosecurity-c3c03.firebasestorage.app",
+            messagingSenderId: "336149977548",
+            appId: "1:336149977548:web:f7d833f35a89f97afaa569",
+            measurementId: "G-QTV2HJ8PMX"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const TOURIST_COLLECTION = "users";
+        const TOURIST_COLLECTION = "tourists";
 
-        // --- 2. FETCH DATA FUNCTION ---
+        // Global Chart Instance (to update it later)
+        let statusChartInstance = null;
+
+        // --- 1. INITIALIZE CHARTS ---
+        function initCharts() {
+            // A. Volume Chart (Static Data for Demo)
+            const ctxVol = document.getElementById('volumeChart').getContext('2d');
+            new Chart(ctxVol, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Tourists',
+                        data: [120, 190, 300, 500, 200, 300], // Mock Data
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: { maintainAspectRatio: false, responsive: true }
+            });
+
+            // B. Status Chart (Will be updated with Real Data)
+            const ctxStat = document.getElementById('statusChart').getContext('2d');
+            statusChartInstance = new Chart(ctxStat, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Active', 'SOS / Missing'],
+                    datasets: [{
+                        data: [0, 0], // Starting empty
+                        backgroundColor: ['#16a34a', '#dc2626'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { maintainAspectRatio: false, responsive: true }
+            });
+        }
+
+        // --- 2. FETCH DATA & UPDATE ---
         async function generateReport() {
             try {
                 const querySnapshot = await getDocs(collection(db, TOURIST_COLLECTION));
                 const totalCount = querySnapshot.size;
                 
-                // Update Stat Card
                 document.getElementById('total-tourists').innerText = totalCount;
 
-                // Populate Table
                 const tableBody = document.getElementById('report-table-body');
                 let rows = '';
                 let sosCount = 0;
+                let activeCount = 0;
 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     const id = doc.id.substring(0,8) + "...";
                     const name = data.name || "Unknown";
-                    const nat = "International"; // Placeholder as nat isn't in schema yet
                     const coords = `${data.latitude?.toFixed(4) || 0}, ${data.longitude?.toFixed(4) || 0}`;
                     const status = data.status || "Active";
 
-                    if(status === 'SOS') sosCount++;
+                    if(status === 'SOS' || status === 'MISSING') {
+                        sosCount++;
+                    } else {
+                        activeCount++;
+                    }
 
                     rows += `
                         <tr>
                             <td style="font-family:monospace; font-weight:bold">${id}</td>
                             <td>${name}</td>
-                            <td>${nat}</td>
                             <td>${coords}</td>
                             <td>
                                 <span style="
@@ -229,17 +271,23 @@
                     `;
                 });
 
-                // Update Table & Alert Stat
-                tableBody.innerHTML = rows || '<tr><td colspan="5" style="text-align:center">No records found.</td></tr>';
+                tableBody.innerHTML = rows || '<tr><td colspan="4" style="text-align:center">No records found.</td></tr>';
                 document.getElementById('total-alerts').innerText = sosCount;
+
+                // --- 3. UPDATE CHART WITH REAL DATA ---
+                if (statusChartInstance) {
+                    statusChartInstance.data.datasets[0].data = [activeCount, sosCount];
+                    statusChartInstance.update();
+                }
 
             } catch (error) {
                 console.error("Error fetching report data:", error);
-                document.getElementById('report-table-body').innerHTML = `<tr><td colspan="5" style="color:red; text-align:center">Error loading data: ${error.message}</td></tr>`;
+                document.getElementById('report-table-body').innerHTML = `<tr><td colspan="4" style="color:red; text-align:center">Error: ${error.message}</td></tr>`;
             }
         }
 
-        // Run on load
+        // Initialize
+        initCharts();
         generateReport();
     </script>
 </body>
