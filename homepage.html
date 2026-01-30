@@ -6,10 +6,11 @@
     <title>Tourist Safety - Command Center</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
     <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
- <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
+    <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
+    
     <style>
-        /* --- General Setup & Variables --- */
         :root {
             --bg-color: #f4f7fa;
             --sidebar-bg: #1f2937;
@@ -28,221 +29,48 @@
             --alert-info-text: #2d3748;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            display: flex;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; background-color: var(--bg-color); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
         
-        /* --- Main Layout --- */
-        .page-wrapper {
-            display: flex;
-            width: 100%;
-        }
-
-        .main-content {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        /* --- Sidebar Navigation --- */
-        .sidebar {
-            width: 250px;
-            background-color: var(--sidebar-bg);
-            color: var(--sidebar-text);
-            padding: 1.5rem 0;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar-header {
-            text-align: center;
-            padding: 0 1.5rem 1.5rem 1.5rem;
-            border-bottom: 1px solid var(--sidebar-hover);
-        }
-
-        .sidebar-header h2 {
-            font-size: 1.5rem;
-            color: #fff;
-        }
+        .page-wrapper { display: flex; width: 100%; height: 100%; }
+        .sidebar { width: 250px; background-color: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar-header { text-align: center; padding: 1.5rem; border-bottom: 1px solid var(--sidebar-hover); }
+        .sidebar-header h2 { font-size: 1.5rem; color: #fff; }
+        .sidebar-nav { flex-grow: 1; list-style: none; margin-top: 1rem; }
+        .sidebar-nav a { display: flex; align-items: center; padding: 1rem 1.5rem; color: var(--sidebar-text); text-decoration: none; font-weight: 500; transition: 0.2s; }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background-color: var(--sidebar-hover); color: #fff; }
+        .sidebar-nav a i { width: 25px; margin-right: 1rem; text-align: center; }
         
-        .sidebar-nav {
-            flex-grow: 1;
-            list-style: none;
-            margin-top: 1rem;
-        }
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .header { background-color: var(--header-bg); border-bottom: 1px solid var(--border-color); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .header-search input { border: 1px solid var(--border-color); border-radius: 8px; padding: 0.6rem 1rem; width: 300px; }
+        .user-profile { display: flex; align-items: center; gap: 10px; font-weight: 500; }
         
-        .sidebar-nav a {
-            display: flex;
-            align-items: center;
-            padding: 1rem 1.5rem;
-            color: var(--sidebar-text);
-            text-decoration: none;
-            font-weight: 500;
-        }
+        .dashboard-container { padding: 2rem; display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: auto 1fr; gap: 2rem; height: 100%; overflow-y: auto; }
+        .stats-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
+        .stat-card { background-color: var(--card-bg); border-radius: 12px; padding: 1.5rem; display: flex; align-items: center; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .stat-card .icon { font-size: 2rem; padding: 1rem; border-radius: 50%; margin-right: 1.5rem; }
+        .stat-card .icon.users { background: var(--alert-info-bg); color: var(--alert-info-text); }
+        .stat-card .icon.alerts { background: var(--alert-critical-bg); color: var(--alert-critical-text); }
+        .stat-card .icon.zones { background: var(--alert-warning-bg); color: var(--alert-warning-text); }
+        .stat-card h3 { font-size: 2rem; font-weight: 700; }
+        .stat-card p { color: var(--text-secondary); font-weight: 500; }
+
+        .panel { background-color: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
+        .panel-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); font-weight: 700; }
         
-        .sidebar-nav a:hover, .sidebar-nav a.active {
-            background-color: var(--sidebar-hover);
-            color: #fff;
-        }
+        .map-panel { height: 100%; min-height: 400px; }
+        .map-container { flex-grow: 1; position: relative; }
+        #map-container { width: 100%; height: 100%; }
 
-        .sidebar-nav a i {
-            width: 20px;
-            margin-right: 1rem;
-            text-align: center;
-        }
-        
-        /* --- Header --- */
-        .header {
-            background-color: var(--header-bg);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header-search input {
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.6rem 1rem;
-            width: 300px;
-            font-size: 1rem;
-        }
-
-        .user-profile {
-            display: flex;
-            align-items: center;
-        }
-        .user-profile span {
-            margin-right: 1rem;
-            font-weight: 500;
-        }
-        .user-profile i {
-            font-size: 1.5rem;
-            color: var(--text-secondary);
-        }
-
-        /* --- Dashboard Grid --- */
-        .dashboard-container {
-            padding: 2rem;
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            grid-template-rows: auto 1fr;
-            gap: 2rem;
-            height: calc(100% - 73px);
-        }
-        
-        /* --- Stat Cards --- */
-        .stats-grid {
-            grid-column: 1 / -1;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .stat-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 1.5rem;
-            display: flex;
-            align-items: center;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        }
-
-        .stat-card .icon {
-            font-size: 2rem;
-            padding: 1rem;
-            border-radius: 50%;
-            margin-right: 1.5rem;
-        }
-
-        .stat-card .icon.users { background-color: var(--alert-info-bg); color: var(--alert-info-text); }
-        .stat-card .icon.alerts { background-color: var(--alert-critical-bg); color: var(--alert-critical-text); }
-        .stat-card .icon.zones { background-color: var(--alert-warning-bg); color: var(--alert-warning-text); }
-        
-        .stat-card h3 {
-            font-size: 2rem;
-            font-weight: 700;
-        }
-        .stat-card p {
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        /* --- Main Panels (Map & Alerts) --- */
-        .panel {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .panel-header {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        /* Map Panel */
-        .map-container {
-            flex-grow: 1;
-            background: url('https://i.stack.imgur.com/HnSvh.png') center center/cover no-repeat;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-        }
-        .map-placeholder-text {
-            background-color: rgba(0,0,0,0.5);
-            padding: 1rem 2rem;
-            border-radius: 8px;
-        }
-
-        /* Alerts Panel */
-        .alerts-feed {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 0.5rem 0;
-        }
-        .alert-item {
-            display: flex;
-            align-items: center;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .alert-icon {
-            font-size: 1.2rem;
-            margin-right: 1rem;
-            width: 20px;
-        }
+        .alerts-panel { height: 100%; }
+        .alerts-feed { flex-grow: 1; overflow-y: auto; }
+        .alert-item { display: flex; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); animation: fadeIn 0.5s ease-out; }
+        .alert-icon { font-size: 1.2rem; margin-right: 1rem; width: 20px; }
         .alert-critical-text { color: var(--alert-critical-text); }
-        .alert-warning-text { color: var(--alert-warning-text); }
-
-        .alert-details p {
-            font-weight: 500;
-        }
-        .alert-details span {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
+        .alert-info-text { color: #2563eb; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -257,7 +85,7 @@
                 <li><a href="TouristID.html"><i class="fa-solid fa-users"></i> Tourist IDs</a></li>
                 <li><a href="ZoneManagement.html"><i class="fa-solid fa-map-marked-alt"></i> Zone Management</a></li>
                 <li><a href="Reports.html"><i class="fa-solid fa-chart-line"></i> Reports</a></li>
-                </ul>
+            </ul>
         </nav>
 
         <main class="main-content">
@@ -272,26 +100,24 @@
             </header>
             
             <div class="dashboard-container">
-                
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="icon users"><i class="fa-solid fa-users"></i></div>
                         <div class="info">
-                            <h3 id="activetcount">No Value</h3>
+                            <h3 id="activetcount">0</h3>
                             <p>Active Tourists</p>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="icon alerts"><i class="fa-solid fa-triangle-exclamation"></i></div>
                         <div class="info">
-                            <h3>0</h3>
-                            <p>Active Alerts</p>
+                            <h3 id="alert-count-display">0</h3> <p>Active Alerts</p>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="icon zones"><i class="fa-solid fa-draw-polygon"></i></div>
                         <div class="info">
-                            <h3 id = "HRisk">0</h3>
+                            <h3 id="HRisk">3</h3>
                             <p>High-Risk Zones</p>
                         </div>
                     </div>
@@ -299,249 +125,173 @@
 
                 <div class="panel map-panel">
                     <div class="panel-header">Live Tourist Map</div>
-                    <div class="map-container" id = "map-container">
-                        <!--<h3 class="map-placeholder-text">Interactive Map Area</h3>-->
+                    <div class="map-container">
+                        <div id="map-container"></div>
                     </div>
                 </div>
 
                 <div class="panel alerts-panel">
                     <div class="panel-header">Live Alerts Feed</div>
                     <div class="alerts-feed">
-                        <!--<div class="alert-item">
-                            <div class="alert-icon alert-critical-text"><i class="fa-solid fa-tower-broadcast"></i></div>
-                            <div class="alert-details">
-                                <p>SOS Panic Button</p>
-                                <span>ID: 9A8B7C6D - 30 seconds ago</span>
-                            </div>
                         </div>
-                        <div class="alert-item">
-                            <div class="alert-icon alert-warning-text"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
-                            <div class="alert-details">
-                                <p>Geo-Fence Breach</p>
-                                <span>ID: F5E4D3C2 - 2 minutes ago</span>
-                            </div>
-                        </div>
-                         <div class="alert-item">
-                            <div class="alert-icon alert-warning-text"><i class="fa-solid fa-route"></i></div>
-                            <div class="alert-details">
-                                <p>Route Deviation Detected</p>
-                                <span>ID: 1A2B3C4D - 5 minutes ago</span>
-                            </div>
-                        </div>-->
-                    </div>
                 </div>
-
             </div>
         </main>
     </div>
-    <script type = "module">
-  const map = new maplibregl.Map({
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+        // --- CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBinQO3_OZ4zozkvyC4litpysTy0MU0Dz4",
+            authDomain: "acrosecurity-c3c03.firebaseapp.com",
+            projectId: "acrosecurity-c3c03",
+            storageBucket: "acrosecurity-c3c03.firebasestorage.app",
+            messagingSenderId: "336149977548",
+            appId: "1:336149977548:web:f7d833f35a89f97afaa569",
+            measurementId: "G-QTV2HJ8PMX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const TOURIST_COLLECTION_PATH = "tourists";
+        
+        const touristMarkers = {};
+        let alertCounter = 0;
+
+        // --- MAP INITIALIZATION ---
+        // Centered on Thane, India (Your location context)
+        const map = new maplibregl.Map({
             container: 'map-container',
             style: {
                 version: 8,
                 sources: {
                     'carto-tiles': {
                         type: 'raster',
-                        tiles: [
-                            'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                            'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-                            'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
-                        ],
+                        tiles: ['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],
                         tileSize: 256,
                         attribution: '© CARTO'
                     }
                 },
-                layers: [
-                    {
-                        id: 'simple-tiles',
-                        type: 'raster',
-                        source: 'carto-tiles',
-                        minzoom: 0,
-                        maxzoom: 22
-                    }
-                ]
+                layers: [{
+                    id: 'simple-tiles',
+                    type: 'raster',
+                    source: 'carto-tiles',
+                    minzoom: 0,
+                    maxzoom: 22
+                }]
             },
-            center: [-73.968285,40.785091],
-            zoom: 14,
-            attributionControl: false
+            center: [72.978088, 19.218331], // Thane
+            zoom: 12
         });
 
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
-  import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        // --- UI FUNCTIONS ---
 
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyBinQO3_OZ4zozkvyC4litpysTy0MU0Dz4",
-    authDomain: "acrosecurity-c3c03.firebaseapp.com",
-    projectId: "acrosecurity-c3c03",
-    storageBucket: "acrosecurity-c3c03.firebasestorage.app",
-    messagingSenderId: "336149977548",
-    appId: "1:336149977548:web:f7d833f35a89f97afaa569",
-    measurementId: "G-QTV2HJ8PMX"
-  };
-
-  // 1. Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-const db = getFirestore(app);
-        const touristMarkers = {};
-        const TOURIST_COLLECTION_PATH = "tourists";
-
-/**
- * Updates the 'Active Tourists' count in the HTML based on the touristMarkers object size.
- */
-function updateTouristCountDisplay() {
-    const no_of_tourists = Object.keys(touristMarkers).length;
-    const countElement = document.getElementById("activetcount");
-    if (countElement) {
-        countElement.innerText = no_of_tourists;
-        console.log("Current active tourist count:", no_of_tourists);
-    } else {
-        console.error("HTML element with ID 'activetcount' not found.");
-    }
-}
-
-const MAX_ALERTS = 10;
-        
-function insertAlert(type, touristId) {
-    const feed = document.querySelector('.alerts-feed');
-    if (!feed) return; // Exit if the feed element isn't found
-
-    let iconClass = '';
-    let alertText = '';
-    let alertColorClass = '';
-    let alertTime = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-    if (type === 'add') {
-        iconClass = 'fa-solid fa-plus';
-        alertText = `NEW Tourist Detected`;
-        alertColorClass = 'alert-info-text';
-    } else if (type === 'remove') {
-        iconClass = 'fa-solid fa-minus';
-        alertText = `Tourist Removed`;
-        alertColorClass = 'alert-critical-text'; // Use critical to highlight removal
-    } else {
-        return;
-    }
-
-    
-    // Create the new alert HTML structure
-    const newAlertHTML = `
-        <div class="alert-item">
-            <div class="alert-icon ${alertColorClass}">
-                <i class="${iconClass}"></i>
-            </div>
-            <div class="alert-details">
-                <p>${alertText}</p>
-                <span>ID: ${touristId} - ${alertTime}</span>
-            </div>
-        </div>
-    `;
-
-    // 1. Insert the new alert at the top of the feed (prepend)
-    feed.insertAdjacentHTML('afterbegin', newAlertHTML);
-
-    // 2. Manage Feed size: Remove the oldest alert if the limit is exceeded
-    while (feed.children.length > MAX_ALERTS) {
-        // Remove the last child (the oldest item)
-        feed.lastElementChild.remove();
-    }
-}
-        
-function updateMapMarker(touristId, lat, lon, status) { 
-    const coordinates = [lon, lat];
-    
-    // 2. Combine the status for the popup text
-    const popupText = 
-        `Tourist ID: ${touristId}\n` +
-        `Location: ${lat.toFixed(6)}, ${lon.toFixed(6)}\n` +
-        `API Status: ${status || 'N/A'}`; 
-    
-    if (touristId in touristMarkers) {
-        // --- MODIFIED EXISTING MARKER ---
-        touristMarkers[touristId].marker.setLngLat(coordinates);
-        touristMarkers[touristId].popup.setText(popupText);
-        console.log(`Updated marker and popup for ${touristId}`);
-
-    } else {
-        // --- ADDED NEW MARKER ---
-        const popup = new maplibregl.Popup({ offset: 25 }).setText(popupText);
-        const marker = new maplibregl.Marker({ color: status === 'MISSING' ? 'red' : 'blue' })
-            .setLngLat(coordinates)
-            .setPopup(popup) 
-            .addTo(map);
-            
-        touristMarkers[touristId] = {
-            marker: marker,
-            popup: popup
-        };
-        
-        console.log(`New marker added for ${touristId}`);
-        map.flyTo({
-            center: coordinates,
-            zoom: 14,
-            speed: 1.5
-        });
-        
-        // 🚨 NEW ALERT ADDITION
-        insertAlert('add', touristId);
-    }
-    
-    updateTouristCountDisplay(); 
-}
-function removeMapMarker(touristId) {
-    if (touristId in touristMarkers) {
-        touristMarkers[touristId].marker.remove();
-        delete touristMarkers[touristId];
-        console.log(`Marker and popup removed for ${touristId}`);
-        
-        // 🚨 NEW ALERT ADDITION
-        insertAlert('remove', touristId);
-        
-        updateTouristCountDisplay(); 
-    }
-}
-// --- REAL-TIME DATA LISTENER ---
-const touristCollection = collection(db, TOURIST_COLLECTION_PATH);
-    
-onSnapshot(touristCollection, (snapshot) => {
-    snapshot.docChanges().forEach((change) => {
-        const touristData = change.doc.data();
-        const touristId = change.doc.id;
-        const lat = touristData.latitude;
-        const lon = touristData.longitude; 
-        const status = touristData.status; // Get the status from the backend
-
-        if (change.type === "added" || change.type === "modified") {
-            // Only update if we have valid coordinates
-            if (typeof lat === 'number' && typeof lon === 'number') {
-                updateMapMarker(touristId, lat, lon, status);
-            } else {
-                console.error(`Invalid coordinates for ${touristId}. Skipping update.`);
-            }
-        } else if (change.type === "removed") {
-            removeMapMarker(touristId);
+        function updateTouristCountDisplay() {
+            const count = Object.keys(touristMarkers).length;
+            const el = document.getElementById("activetcount");
+            if (el) el.innerText = count;
         }
-    });
-});
-</script>
+
+        function updateAlertCount(increment) {
+            const el = document.getElementById("alert-count-display");
+            if (el) {
+                if(increment) alertCounter++;
+                // Simple logic: Display total alerts generated in this session
+                el.innerText = alertCounter;
+            }
+        }
+
+        function insertAlert(type, touristId) {
+            const feed = document.querySelector('.alerts-feed');
+            if (!feed) return;
+
+            let iconClass = type === 'add' ? 'fa-solid fa-plus' : 'fa-solid fa-minus';
+            let alertText = type === 'add' ? 'NEW Tourist Detected' : 'Tourist Disconnected';
+            let colorClass = type === 'add' ? 'alert-info-text' : 'alert-critical-text';
+            let time = new Date().toLocaleTimeString();
+
+            const html = `
+                <div class="alert-item">
+                    <div class="alert-icon ${colorClass}"><i class="${iconClass}"></i></div>
+                    <div class="alert-details">
+                        <p>${alertText}</p>
+                        <span>ID: ${touristId} • ${time}</span>
+                    </div>
+                </div>
+            `;
+            feed.insertAdjacentHTML('afterbegin', html);
+            updateAlertCount(true); // Increment stat card
+            
+            // Limit feed to 10 items
+            if(feed.children.length > 10) feed.lastElementChild.remove();
+        }
+
+        // --- MAP FUNCTIONS ---
+
+        function updateMapMarker(touristId, lat, lon, status) {
+            const coords = [lon, lat]; // GeoJSON order: [Lng, Lat]
+            const popupText = `<strong>ID:</strong> ${touristId}<br><strong>Live Status:</strong> ${status || 'Active'}`;
+
+            if (touristMarkers[touristId]) {
+                // Update existing
+                touristMarkers[touristId].marker.setLngLat(coords);
+                touristMarkers[touristId].popup.setHTML(popupText);
+            } else {
+                // Create new
+                const popup = new maplibregl.Popup({ offset: 25 }).setHTML(popupText);
+                const el = document.createElement('div');
+                el.className = 'marker';
+                el.style.width = '20px';
+                el.style.height = '20px';
+                el.style.borderRadius = '50%';
+                el.style.border = '2px solid white';
+                el.style.backgroundColor = status === 'SOS' ? '#ef4444' : '#3b82f6';
+                el.style.cursor = 'pointer';
+
+                const marker = new maplibregl.Marker({ element: el })
+                    .setLngLat(coords)
+                    .setPopup(popup)
+                    .addTo(map);
+
+                touristMarkers[touristId] = { marker, popup };
+                insertAlert('add', touristId);
+                
+                // Fly to new user
+                map.flyTo({ center: coords, speed: 0.5 });
+            }
+            updateTouristCountDisplay();
+        }
+
+        function removeMapMarker(touristId) {
+            if (touristMarkers[touristId]) {
+                touristMarkers[touristId].marker.remove();
+                delete touristMarkers[touristId];
+                insertAlert('remove', touristId);
+                updateTouristCountDisplay();
+            }
+        }
+
+        // --- FIREBASE LISTENER ---
+        const touristCollection = collection(db, TOURIST_COLLECTION_PATH);
+
+        onSnapshot(touristCollection, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                const data = change.doc.data();
+                const id = change.doc.id;
+
+                if (change.type === "added" || change.type === "modified") {
+                    if (data.latitude && data.longitude) {
+                        updateMapMarker(id, data.latitude, data.longitude, data.status);
+                    }
+                } else if (change.type === "removed") {
+                    removeMapMarker(id);
+                }
+            });
+        });
+
+    </script>
 </body>
-
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
