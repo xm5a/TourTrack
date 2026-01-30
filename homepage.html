@@ -293,8 +293,8 @@
                 const id = change.doc.id;
 
                 if (change.type === "added" || change.type === "modified") {
-                    if (data.latitude && data.longitude) {
-                        updateMapMarker(id, data.latitude, data.longitude, data.status);
+                    if (data.lat && data.lng) {
+                        updateMapMarker(id, data.lat, data.lng, 'Active');
                     }
                 } else if (change.type === "removed") {
                     removeMapMarker(id);
@@ -305,4 +305,5 @@
     </script>
 </body>
 </html>
+
 
