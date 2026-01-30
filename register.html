@@ -318,7 +318,7 @@
                             <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
-                            <input type="text" class="form-input" placeholder="John Doe" required>
+                            <input type="text" class="form-input" placeholder="John Doe" id = "Uname" required>
                         </div>
                     </div>
 
@@ -330,7 +330,7 @@
                             <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
-                            <input type="email" class="form-input" placeholder="Example@Tourist.com" required>
+                            <input type="email" class="form-input" placeholder="Example@Tourist.com" id = "EmailField" required>
                         </div>
                     </div>
 
@@ -370,7 +370,7 @@
                 </div>
 
                 <div class="footer">
-                    <p>Have an account? <a href="index.html">LogIn Now!</a></p>
+                    <p>Have an account? <a href="index.html">Log-In Now!</a></p>
                 </div>
 
             </div>
@@ -379,10 +379,54 @@
     </div>
 
     <!-- Simple Script for Password Toggle -->
-    <script>
+    <script type = "module">
+
+        // Import the functions you need from the SDKs you need
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
+
+  // TODO: Add SDKs for Firebase products that you want to use
+
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+
+  // Your web app's Firebase configuration
+
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
+  const firebaseConfig = {
+
+    apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
+
+    authDomain: "tour-track-ddb18.firebaseapp.com",
+
+    projectId: "tour-track-ddb18",
+
+    storageBucket: "tour-track-ddb18.firebasestorage.app",
+
+    messagingSenderId: "426865781508",
+
+    appId: "1:426865781508:web:8fb7a409f00c536955be51",
+
+    measurementId: "G-TQZT1H6PPS"
+
+  };
+
+
+  // Initialize Firebase
+
+  const app = initializeApp(firebaseConfig);
+
+  const analytics = getAnalytics(app);
+
+        
+        const passwordInput = document.getElementById('passwordInput');
+        const eyeIcon = document.getElementById('eyeIcon');
+        const emailInput = document.getElementById('EmailField');
+        const nameInput = document.getElementById('Uname');
         function togglePassword() {
-            const passwordInput = document.getElementById('passwordInput');
-            const eyeIcon = document.getElementById('eyeIcon');
             
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
