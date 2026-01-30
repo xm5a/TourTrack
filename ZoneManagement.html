@@ -230,6 +230,7 @@
                 map.once('draw.create', async (e) => {
                     const feature = e.features[0];
                     let ring = feature.geometry.coordinates;
+                    console.log(ring.length);
 
                     // VALIDATION
                     if (ring.length < 3) {
@@ -309,5 +310,6 @@
     </script>
 </body>
 </html>
+
 
 
