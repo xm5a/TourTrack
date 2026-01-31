@@ -18,9 +18,6 @@
             --border-color: #e5e7eb;
             --text-primary: #111827;
             --text-secondary: #6b7280;
-            --alert-critical: #b91c1c;
-            --alert-warning: #b45309;
-            --alert-info: #1e40af;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -147,7 +144,7 @@
                     </thead>
                     <tbody id="tableBody">
                         <tr>
-                            <td colspan="4" class="status-loading">Connecting to database...</td>
+                            <td colspan="4" class="status-loading">Loading alerts from Firestore...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -156,10 +153,11 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        // 1. Updated Imports for Firestore
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-        // Your Firebase configuration
+        // 2. Your Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
             authDomain: "tour-track-ddb18.firebaseapp.com",
@@ -170,42 +168,46 @@
             measurementId: "G-TQZT1H6PPS"
         };
 
-        // Initialize Firebase
+        // 3. Initialize Firebase & Firestore
         const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        // Reference to the table body
+        const db = getFirestore(app);
         const tableBody = document.getElementById('tableBody');
 
-        // Reference to your 'alerts' node in Realtime Database
-        const alertsRef = ref(db, 'alerts');
+        // 4. Listen to the "users" collection
+        // Note: Using a query to order by timestamp if the field exists
+        const usersCollection = collection(db, "users");
+        
+        onSnapshot(usersCollection, (snapshot) => {
+            tableBody.innerHTML = ""; // Clear table
 
-        // Fetch and Listen for data
-        onValue(alertsRef, (snapshot) => {
-            const data = snapshot.val();
-            tableBody.innerHTML = ""; // Clear current table contents
-
-            if (data) {
+            if (!snapshot.empty) {
                 let index = 1;
-                // Loop through the data (Firebase returns an object of objects)
-                Object.keys(data).forEach((key) => {
-                    const alert = data[key];
+                snapshot.forEach((doc) => {
+                    const alert = doc.data();
                     
+                    // Create row
                     const row = document.createElement('tr');
+                    
+                    // Handle Firestore Timestamps if they are Objects
+                    let displayTime = alert.timestamp || 'No Timestamp';
+                    if (displayTime && typeof displayTime.toDate === 'function') {
+                        displayTime = displayTime.toDate().toLocaleString();
+                    }
+
                     row.innerHTML = `
                         <td>${index++}</td>
                         <td>${alert.touristId || 'N/A'}</td>
                         <td>${alert.touristName || 'Unknown'}</td>
-                        <td>${alert.timestamp || 'No Timestamp'}</td>
+                        <td>${displayTime}</td>
                     `;
                     tableBody.appendChild(row);
                 });
             } else {
-                tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No alerts found in history.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No data found in the "users" collection.</td></tr>';
             }
         }, (error) => {
-            console.error("Error fetching data: ", error);
-            tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Error loading data. Check console.</td></tr>';
+            console.error("Firestore Error:", error);
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Error: ${error.message}</td></tr>`;
         });
     </script>
 </body>
