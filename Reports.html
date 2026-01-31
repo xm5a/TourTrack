@@ -251,8 +251,8 @@
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     const id = doc.id.substring(0,8) + "...";
-                    const name = data.name || "Unknown";
-                    const coords = `${data.latitude?.toFixed(4) || 0}, ${data.longitude?.toFixed(4) || 0}`;
+                    const name = data.fullName || "Unknown";
+                    const coords = `${data.lat?.toFixed(4) || 0}, ${data.lng?.toFixed(4) || 0}`;
                     const status = data.status || "Active";
 
                     if(status === 'SOS' || status === 'MISSING') {
@@ -301,4 +301,5 @@
     </script>
 </body>
 </html>
+
 
