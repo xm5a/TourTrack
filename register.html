@@ -355,7 +355,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn-register">
+                    <button type="submit" class="btn-register" id="RegBtn">
                         REGISTER
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
@@ -386,7 +386,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
 
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-analytics.js";
-import { getAuth } from ""https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 
   // TODO: Add SDKs for Firebase products that you want to use
 
@@ -430,6 +430,8 @@ const Collection = "Admin_Users";
         const nameInput = document.getElementById('Uname');
         const email = emailInput.value;
         const pass = passwordInput.value;
+        RegBtn.addEventListener("click", createAdmin(auth,email,pass));
+        function createAdmin(auth,email,pass){
 createUserWithEmailAndPassword(auth, email, pass)
   .then((userCredential) => {
     // Signed up 
@@ -441,6 +443,7 @@ createUserWithEmailAndPassword(auth, email, pass)
     const errorMessage = error.message;
     // ..
   });
+        }
 
         
         function togglePassword() {
