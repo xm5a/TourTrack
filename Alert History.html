@@ -189,7 +189,7 @@
                     const row = document.createElement('tr');
                     
                     // Handle Firestore Timestamps if they are Objects
-                    let displayTime = alert.timestamp || 'No Timestamp';
+                    let displayTime = new Date().toLocaleTimeString(); || 'No Timestamp';
                     if (displayTime && typeof displayTime.toDate === 'function') {
                         displayTime = displayTime.toDate().toLocaleString();
                     }
@@ -197,7 +197,7 @@
                     row.innerHTML = `
                         <td>${index++}</td>
                         <td>${alert.touristId || 'N/A'}</td>
-                        <td>${alert.touristName || 'Unknown'}</td>
+                        <td>${alert.fullName || 'Unknown'}</td>
                         <td>${displayTime}</td>
                     `;
                     tableBody.appendChild(row);
@@ -212,3 +212,4 @@
     </script>
 </body>
 </html>
+
