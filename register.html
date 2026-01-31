@@ -428,7 +428,9 @@ const Collection = "Admin_Users";
         const eyeIcon = document.getElementById('eyeIcon');
         const emailInput = document.getElementById('EmailField');
         const nameInput = document.getElementById('Uname');
-createUserWithEmailAndPassword(auth, emailInput, passwordInput)
+        const email = emailInput.value;
+        const pass = passwordInput.value;
+createUserWithEmailAndPassword(auth, email, pass)
   .then((userCredential) => {
     // Signed up 
     const user = userCredential.user;
