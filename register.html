@@ -175,7 +175,8 @@
                     regBtn.disabled = false;
                     
                     if (error.code === 'auth/email-already-in-use') {
-                        alert("This email is already registered. Please log in.");
+                        //alert("This email is already registered. Please log in.");
+                        window.location.href = "homepage.html";
                     } else if (error.code === 'auth/weak-password') {
                         alert("Password should be at least 6 characters.");
                     } else {
