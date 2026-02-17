@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        /* --- KEEPING YOUR EXISTING STYLES --- */
+        /* --- SAME STYLES AS BEFORE --- */
         :root {
             --bg-color: #f4f7fa;
             --sidebar-bg: #1f2937;
@@ -43,7 +43,6 @@
         .content-container { padding: 2rem; }
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
         .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
-        .btn-primary { background-color: var(--accent-color); color: #fff; }
 
         .reports-grid { display: grid; gap: 1.5rem; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
@@ -58,18 +57,16 @@
         .stat-card h3 { font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
         .stat-card .value { font-size: 2.25rem; font-weight: 700; }
 
-        /* Chart Containers */
         .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
         .chart-card { 
             background-color: var(--card-bg); 
             border: 1px solid var(--border-color); 
             border-radius: 12px; 
             padding: 1.5rem;
-            height: 400px; /* Fixed height for charts */
+            height: 400px;
             position: relative;
         }
         
-        /* Table */
         .table-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -83,9 +80,7 @@
         .data-table thead { background-color: #f9fafb; }
         .data-table th { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
         
-        @media (max-width: 992px) {
-            .charts-grid { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 992px) { .charts-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -139,8 +134,8 @@
                     
                     <div class="charts-grid">
                         <div class="chart-card">
-                            <h3>Monthly Tourist Volume</h3>
-                            <canvas id="volumeChart"></canvas>
+                            <h3>Live Tourist Traffic (Real-time)</h3>
+                            <canvas id="liveTrafficChart"></canvas>
                         </div>
                         <div class="chart-card">
                             <h3>Live Status Breakdown</h3>
@@ -173,7 +168,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        // Switched 'getDocs' to 'onSnapshot' for real-time updates
         import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -191,35 +185,46 @@
         const TOURIST_COLLECTION = "users";
 
         let statusChartInstance = null;
+        let trafficChartInstance = null;
 
         // --- 1. INITIALIZE CHARTS ---
         function initCharts() {
-            // A. Volume Chart (Still Static - Time series needs separate history DB)
-            const ctxVol = document.getElementById('volumeChart').getContext('2d');
-            new Chart(ctxVol, {
+            // A. Live Traffic Chart (Starts Empty)
+            const ctxVol = document.getElementById('liveTrafficChart').getContext('2d');
+            trafficChartInstance = new Chart(ctxVol, {
                 type: 'line',
                 data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    labels: [], // Time labels will be pushed here
                     datasets: [{
-                        label: 'Tourists',
-                        data: [120, 190, 300, 500, 200, 300],
+                        label: 'Active Users',
+                        data: [], // Count data will be pushed here
                         borderColor: '#2563eb',
                         backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                        tension: 0.4,
-                        fill: true
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 4
                     }]
                 },
-                options: { maintainAspectRatio: false, responsive: true }
+                options: { 
+                    maintainAspectRatio: false, 
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, suggestedMax: 10 }
+                    },
+                    animation: {
+                        duration: 1000 // Smooth slide animation
+                    }
+                }
             });
 
-            // B. Status Chart - Initial Setup (Data will come from Snapshot)
+            // B. Status Chart (Donut)
             const ctxStat = document.getElementById('statusChart').getContext('2d');
             statusChartInstance = new Chart(ctxStat, {
                 type: 'doughnut',
                 data: {
                     labels: ['Safe / Active', 'SOS / Danger'],
                     datasets: [{
-                        data: [0, 0], // Init with zero
+                        data: [0, 0],
                         backgroundColor: ['#16a34a', '#dc2626'],
                         hoverOffset: 4
                     }]
@@ -227,16 +232,33 @@
                 options: { 
                     maintainAspectRatio: false, 
                     responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
+                    plugins: { legend: { position: 'bottom' } }
                 }
             });
         }
 
-        // --- 2. REAL-TIME DATA LISTENER ---
+        // --- 2. UPDATE TRAFFIC CHART (The "Moving" Effect) ---
+        function updateTrafficChart(totalCount) {
+            if (!trafficChartInstance) return;
+
+            const now = new Date();
+            const timeLabel = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
+
+            // Push new data
+            trafficChartInstance.data.labels.push(timeLabel);
+            trafficChartInstance.data.datasets[0].data.push(totalCount);
+
+            // Keep only last 10 points to make it "scroll"
+            if (trafficChartInstance.data.labels.length > 10) {
+                trafficChartInstance.data.labels.shift(); // Remove oldest label
+                trafficChartInstance.data.datasets[0].data.shift(); // Remove oldest data
+            }
+
+            trafficChartInstance.update();
+        }
+
+        // --- 3. REAL-TIME DATA LISTENER ---
         function startLiveUpdates() {
-            // onSnapshot runs every time something changes in Firebase
             onSnapshot(collection(db, TOURIST_COLLECTION), (snapshot) => {
                 
                 let sosCount = 0;
@@ -246,28 +268,19 @@
 
                 snapshot.forEach((doc) => {
                     const data = doc.data();
-                    
-                    // --- THE KEY LOGIC CHANGE ---
-                    // Check if 'sos' field is explicitly true
                     const isSOS = data.sos === true; 
                     
-                    if (isSOS) {
-                        sosCount++;
-                    } else {
-                        activeCount++;
-                    }
+                    if (isSOS) sosCount++;
+                    else activeCount++;
 
-                    // Prepare Table Row Data
+                    // Table Logic
                     const id = doc.id.substring(0,8) + "...";
                     const name = data.fullName || "Unknown";
-                    // Handle missing lat/lng gracefully
                     const lat = data.lat !== undefined ? data.lat.toFixed(4) : "0.0000";
                     const lng = data.lng !== undefined ? data.lng.toFixed(4) : "0.0000";
                     const coords = `${lat}, ${lng}`;
-
-                    // Badge Logic
-                    const badgeColor = isSOS ? '#fee2e2' : '#dcfce7'; // Red bg vs Green bg
-                    const textColor = isSOS ? '#991b1b' : '#166534'; // Dark red text vs Dark green text
+                    const badgeColor = isSOS ? '#fee2e2' : '#dcfce7';
+                    const textColor = isSOS ? '#991b1b' : '#166534';
                     const statusText = isSOS ? 'SOS ALERT' : 'Safe';
 
                     tableRows += `
@@ -276,12 +289,7 @@
                             <td>${name}</td>
                             <td>${coords}</td>
                             <td>
-                                <span style="
-                                    padding: 4px 12px; 
-                                    border-radius: 99px; 
-                                    background: ${badgeColor}; 
-                                    color: ${textColor}; 
-                                    font-size: 0.75rem; font-weight: 700;">
+                                <span style="padding: 4px 12px; border-radius: 99px; background: ${badgeColor}; color: ${textColor}; font-size: 0.75rem; font-weight: 700;">
                                     ${statusText}
                                 </span>
                             </td>
@@ -289,16 +297,19 @@
                     `;
                 });
 
-                // Update DOM Elements
+                // Update Text Stats
                 document.getElementById('total-tourists').innerText = totalCount;
                 document.getElementById('total-alerts').innerText = sosCount;
                 document.getElementById('report-table-body').innerHTML = tableRows || '<tr><td colspan="4" style="text-align:center">No users found.</td></tr>';
 
-                // Update Chart Dynamically
+                // Update Donut Chart
                 if (statusChartInstance) {
                     statusChartInstance.data.datasets[0].data = [activeCount, sosCount];
-                    statusChartInstance.update(); // Animates the change
+                    statusChartInstance.update();
                 }
+
+                // Update Traffic Chart (The Scrolling Line)
+                updateTrafficChart(totalCount);
 
             }, (error) => {
                 console.error("Firebase Snapshot Error:", error);
