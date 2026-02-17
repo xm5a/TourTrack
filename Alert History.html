@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
+        /* --- KEEP YOUR EXISTING CSS VARIABLES & LAYOUT --- */
         :root {
             --bg-color: #f4f7fa;
             --sidebar-bg: #1f2937;
@@ -30,7 +31,7 @@
         
         .page-wrapper { display: flex; width: 100%; }
 
-        /* Sidebar Fix */
+        /* Sidebar Styles (Unchanged) */
         .sidebar {
             width: 250px;
             background-color: var(--sidebar-bg);
@@ -41,13 +42,11 @@
             height: 100vh;
             position: fixed;
         }
-
         .sidebar-header {
             text-align: center;
             padding: 0 1.5rem 1.5rem 1.5rem;
             border-bottom: 1px solid var(--sidebar-hover);
         }
-
         .sidebar-nav { flex-grow: 1; list-style: none; margin-top: 1rem; }
         .sidebar-nav a {
             display: flex;
@@ -82,6 +81,7 @@
 
         .content-container { padding: 2rem; }
 
+        /* --- UPDATED TABLE STYLES --- */
         .history-table {
             width: 100%;
             border-collapse: collapse;
@@ -103,6 +103,38 @@
             font-weight: 600;
             color: var(--text-secondary);
             text-transform: uppercase;
+        }
+
+        /* --- NEW: ALERT BADGES --- */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        /* Red for SOS/Critical */
+        .badge-sos {
+            background-color: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        /* Orange for Geofence */
+        .badge-geo {
+            background-color: #fff7ed;
+            color: #ea580c;
+            border: 1px solid #fed7aa;
+        }
+
+        /* Green for Resolved/Safe */
+        .badge-safe {
+            background-color: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
         }
 
         .status-loading { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -136,16 +168,16 @@
                 <table class="history-table" id="alertTable">
                     <thead>
                         <tr>
-                            <th>Sr. No.</th>
-                            <th>Mobile / ID</th>
-                            <th>Full Name</th>
-                            <th>Created At</th>
-                            <th>Nationality</th>
+                            <th>Time</th>
+                            <th>Alert Type</th>
+                            <th>User Name</th>
+                            <th>Contact</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
                         <tr>
-                            <td colspan="5" class="status-loading">Syncing with Firestore...</td>
+                            <td colspan="5" class="status-loading">Loading Alerts...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -155,7 +187,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        // Import 'query' and 'orderBy' to sort alerts by newest first
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
@@ -171,44 +204,62 @@
         const db = getFirestore(app);
         const tableBody = document.getElementById('tableBody');
 
-        // Listening to your "users" collection
-        onSnapshot(collection(db, "users"), (snapshot) => {
+        // Reference the 'alerts' collection, sorted by timestamp descending (newest on top)
+        const q = query(collection(db, "alerts"), orderBy("timestamp", "desc"));
+
+        onSnapshot(q, (snapshot) => {
             tableBody.innerHTML = ""; 
 
             if (!snapshot.empty) {
-                let index = 1;
                 snapshot.forEach((doc) => {
-                    const userData = doc.data();
+                    const alertData = doc.data();
                     
-                    // Converting numeric timestamp (createdAt) to a readable date
+                    // 1. Format Date
                     let dateStr = "N/A";
-                    if (userData.createdAt) {
-                        const date = new Date(userData.createdAt);
+                    if (alertData.timestamp) {
+                        // Handle both Firestore Timestamp objects and standard JS timestamps
+                        const date = alertData.timestamp.toDate ? alertData.timestamp.toDate() : new Date(alertData.timestamp);
                         dateStr = date.toLocaleString('en-IN', { 
-                            day: '2-digit', 
-                            month: 'short', 
-                            year: 'numeric', 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
+                            day: '2-digit', month: 'short', 
+                            hour: '2-digit', minute: '2-digit' 
                         });
                     }
 
+                    // 2. Determine Badge Color based on Alert Type
+                    let badgeClass = "badge-safe";
+                    let icon = "";
+                    const type = alertData.type || "Unknown";
+                    
+                    if (type.toLowerCase().includes("sos")) {
+                        badgeClass = "badge-sos";
+                        icon = '<i class="fa-solid fa-bell" style="margin-right:5px;"></i>';
+                    } else if (type.toLowerCase().includes("geofence")) {
+                        badgeClass = "badge-geo";
+                        icon = '<i class="fa-solid fa-location-dot" style="margin-right:5px;"></i>';
+                    }
+
+                    // 3. Render Row
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${index++}</td>
-                        <td>${userData.mobile || 'N/A'}</td>
-                        <td><strong>${userData.fullName || 'Unknown'}</strong></td>
                         <td>${dateStr}</td>
-                        <td>${userData.nationality || 'N/A'}</td>
+                        <td>
+                            <span class="badge ${badgeClass}">
+                                ${icon} ${type}
+                            </span>
+                        </td>
+                        <td><strong>${alertData.userName || 'Unknown'}</strong></td>
+                        <td>${alertData.mobile || 'N/A'}</td>
+                        <td>${alertData.status || 'Active'}</td>
                     `;
                     tableBody.appendChild(row);
                 });
             } else {
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No users found.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No alerts found.</td></tr>';
             }
         }, (error) => {
             console.error("Firestore Error:", error);
-            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Permission Denied or Connection Error.</td></tr>`;
+            // If the collection 'alerts' doesn't exist yet, this will also fire
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Listening for alerts... (Ensure 'alerts' collection exists)</td></tr>`;
         });
     </script>
 </body>
