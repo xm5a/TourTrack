@@ -88,13 +88,14 @@
 
         function onScanSuccess(decodedText, decodedResult) {
             console.log(`Scanned ID: ${decodedText}`);
-            
+            const imgElement = document.getElementById('user-doc-image');
             // 1. Stop the camera immediately
             scanner.clear();
 
             // 2. Show the loading state
             document.getElementById('result-card').style.display = 'block';
             document.getElementById('status-text').innerText = "Looking up User...";
+            imgElement.src = `https://dycovrqatiyfniqssisb.storage.supabase.co/storage/v1/s3/${decodedText}`;
             
             // 3. Fetch from Firestore
             fetchUserData(decodedText);
@@ -115,16 +116,17 @@
                     document.getElementById('user-info').innerText = `Nationality: ${data.nationality || 'N/A'} | Status: ${data.status || 'Active'}`;
 
                     // --- THE IMPORTANT PART: SIGNED URL ---
-                    const imgElement = document.getElementById('user-doc-image');
                     
-                    if (data.documents) {
+                    
+                    /*if (data.documents) {
                         imgElement.src = data.documents;
                         imgElement.style.display = 'inline-block';
                     } else {
                         // Fallback if no URL exists
                         imgElement.style.display = 'none';
                         alert("User found, but no Document Image (signedUrl) attached.");
-                    }
+                    }*/
+                    
 
                 } else {
                     document.getElementById('status-text').innerHTML = `<span class="error">User ID Not Found!</span>`;
