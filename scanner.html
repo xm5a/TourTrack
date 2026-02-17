@@ -53,16 +53,18 @@
         
         <div id="reader"></div>
 
-        <div id="result-card">
-            <h3 id="status-text">Fetching Data...</h3>
-            
-            <img id="user-doc-image" class="user-photo" src="" alt="User Document">
-            
-            <h2 id="user-name"></h2>
-            <p id="user-info"></p>
-            
-            <button class="btn" onclick="location.reload()">Scan Next Person</button>
-        </div>
+       <div id="result-card">
+    <h3 id="status-text">Fetching Data...</h3>
+    
+    <div id="photo-container"></div>
+    
+    <h2 id="user-name"></h2>
+    <p id="user-info"></p>
+
+    <div id="document-list" style="margin-top: 20px; text-align: left;"></div>
+    
+    <button class="btn" onclick="location.reload()">Scan Next Person</button>
+</div>
     </div>
 
 <script type="module">
@@ -110,44 +112,50 @@
         await fetchUserData(decodedText);
     }
 
-    async function fetchSupabaseDocs(userId) {
-        const resultContainer = document.getElementById('result-card');
-        const { data, error } = await supabase.storage.from('secure-docs').list(userId);
+async function fetchSupabaseDocs(userId) {
+    const photoContainer = document.getElementById('photo-container');
+    const docList = document.getElementById('document-list');
+    
+    // Clear previous results
+    photoContainer.innerHTML = '';
+    docList.innerHTML = '';
 
-        if (error) {
-            console.error("Supabase Error:", error);
-            return;
-        }
+    const { data, error } = await supabase.storage.from('secure-docs').list(userId);
 
-        // Remove old images/links if any
-        const existingDocs = document.querySelectorAll('.doc-item');
-        existingDocs.forEach(el => el.remove());
-
-        data.forEach(file => {
-            const { data: urlData } = supabase.storage.from('secure-docs').getPublicUrl(`${userId}/${file.name}`);
-            const fileUrl = urlData.publicUrl;
-            
-            const wrapper = document.createElement('div');
-            wrapper.className = 'doc-item';
-            
-            // Check if it's an image
-            if (/\.(jpg|jpeg|png|webp|gif)$/i.test(file.name)) {
-                const img = document.createElement('img');
-                img.src = fileUrl;
-                img.classList.add('user-photo'); // Reusing your existing style
-                wrapper.appendChild(img);
-            } else {
-                const link = document.createElement('a');
-                link.href = fileUrl;
-                link.innerText = `📄 View ${file.name}`;
-                link.target = "_blank";
-                link.className = 'btn'; 
-                link.style.display = 'block';
-                wrapper.appendChild(link);
-            }
-            resultContainer.appendChild(wrapper);
-        });
+    if (error || !data || data.length === 0) {
+        console.log("No documents found in Supabase for this ID.");
+        return;
     }
+
+    data.forEach((file, index) => {
+        const { data: urlData } = supabase.storage.from('secure-docs').getPublicUrl(`${userId}/${file.name}`);
+        const fileUrl = urlData.publicUrl;
+        const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(file.name);
+
+        if (isImage && index === 0) {
+            // Treat the first image found as the "Profile/ID Photo"
+            const img = document.createElement('img');
+            img.src = fileUrl;
+            img.className = 'user-photo'; // This keeps your circular styling
+            photoContainer.appendChild(img);
+        } else {
+            // Treat everything else as a downloadable document link
+            const link = document.createElement('a');
+            link.href = fileUrl;
+            link.target = "_blank";
+            link.innerHTML = isImage ? `🖼️ View Image: ${file.name}` : `📄 View Document: ${file.name}`;
+            link.style.display = "block";
+            link.style.padding = "10px";
+            link.style.marginBottom = "5px";
+            link.style.background = "#fff";
+            link.style.border = "1px solid #ddd";
+            link.style.borderRadius = "5px";
+            link.style.textDecoration = "none";
+            link.style.color = "#2563eb";
+            docList.appendChild(link);
+        }
+    });
+}
 
     async function fetchUserData(userId) {
         try {
