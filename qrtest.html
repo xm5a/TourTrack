@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Document Scanner</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        #reader { width: 500px; margin: auto; }
+        #results { margin-top: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <h2 style="text-align:center">Scan User QR Code</h2>
+    
+    <div id="reader"></div>
+
+    <div id="results"></div>
+
+    <script>
+      function onScanSuccess(decodedText, decodedResult) {
+    // 1. Handle the success! 'decodedText' is your User ID.
+    console.log(`Scan result: ${decodedText}`);
+
+    // 2. Stop the scanning (optional, prevents repeated API calls)
+    html5QrcodeScanner.clear();
+
+    // 3. Fetch documents from your backend
+    fetchDocuments(decodedText);
+}
+
+function onScanFailure(error) {
+    // Handle scan failure, usually better to ignore for cleaner logs.
+    // console.warn(`Code scan error = ${error}`);
+}
+
+// Initialize the Scanner
+let html5QrcodeScanner = new Html5QrcodeScanner(
+    "reader",
+    { fps: 10, qrbox: {width: 250, height: 250} },
+    /* verbose= */ false);
+
+html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+
+
+// Function to talk to your Backend
+async function fetchDocuments(userId) {
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML = "Loading documents for user: " + userId + "...";
+
+    try {
+        // Replace with your actual backend URL
+        const response = await fetch(`http://localhost:3000/api/get-docs?userId=${userId}`);
+        const data = await response.json();
+
+        if (data.documents) {
+            // Render the list
+            let html = `<h3>Documents for ${data.name}:</h3><ul>`;
+            data.documents.forEach(doc => {
+                html += `<li><a href="${doc.url}" target="_blank">${doc.title}</a></li>`;
+            });
+            html += "</ul>";
+            resultsDiv.innerHTML = html;
+        } else {
+            resultsDiv.innerHTML = "No documents found.";
+        }
+    } catch (err) {
+        console.error(err);
+        resultsDiv.innerHTML = "Error fetching data.";
+    }
+}
+    </script>
+</body>
+</html>
