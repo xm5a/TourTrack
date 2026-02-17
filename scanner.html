@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Safety Scanner</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     
     <style>
@@ -79,6 +80,9 @@
             appId: "1:426865781508:web:8fb7a409f00c536955be51",
             measurementId: "G-TQZT1H6PPS"
         };
+        const SUPABASE_URL = 'https://dycovrqatiyfniqssisb.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y292cnFhdGl5Zm5pcXNzaXNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxOTM0OTksImV4cCI6MjA4Mjc2OTQ5OX0.cAx_nxGS4jRZB5tH7Sro8FCjb8nhv6RIbLXdRS-g9Gc';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -89,13 +93,16 @@
         function onScanSuccess(decodedText, decodedResult) {
             console.log(`Scanned ID: ${decodedText}`);
             const imgElement = document.getElementById('user-doc-image');
+            const { data, error } = await supabase.storage.from('secure-docs').list(decodedText);
+            const files = data.map(file => {
+    const { data: publicUrlData } = supabase.storage.from('secure-docs').getPublicUrl(`${decodedText}/${file.name}`);}
             // 1. Stop the camera immediately
             scanner.clear();
 
             // 2. Show the loading state
             document.getElementById('result-card').style.display = 'block';
             document.getElementById('status-text').innerText = "Looking up User...";
-            imgElement.src = `https://dycovrqatiyfniqssisb.storage.supabase.co/storage/v1/s3/${decodedText}`;
+            imgElement.src = files;
             
             // 3. Fetch from Firestore
             fetchUserData(decodedText);
