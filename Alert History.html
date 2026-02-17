@@ -185,10 +185,19 @@
         </main>
     </div>
 
-    <script type="module">
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        // Import 'query' and 'orderBy' to sort alerts by newest first
-        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import { 
+            getFirestore, 
+            collection, 
+            onSnapshot, 
+            query, 
+            orderBy, 
+            where, 
+            getDocs, 
+            addDoc, 
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
@@ -204,20 +213,84 @@
         const db = getFirestore(app);
         const tableBody = document.getElementById('tableBody');
 
-        // Reference the 'alerts' collection, sorted by timestamp descending (newest on top)
-        const q = query(collection(db, "alerts"), orderBy("timestamp", "desc"));
+        // ======================================================
+        // PART 1: MONITOR 'USERS' TO TRIGGER ALERTS AUTOMATICALLY
+        // ======================================================
+        
+        // Listen to the USERS collection
+        onSnapshot(collection(db, "users"), (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                // We only care if a user was ADDED or MODIFIED
+                if (change.type === "added" || change.type === "modified") {
+                    const userData = change.doc.data();
+                    const userId = change.doc.id;
 
-        onSnapshot(q, (snapshot) => {
+                    // IF SOS IS TRUE -> Trigger the Logic
+                    if (userData.sos === true) {
+                        await createAlertIfNeeded(userId, userData);
+                    }
+                }
+            });
+        });
+
+        // Function to create an alert ONLY if one doesn't exist yet
+        async function createAlertIfNeeded(userId, userData) {
+            const alertsRef = collection(db, "alerts");
+            
+            // 1. Check if an "Active" alert already exists for this user
+            // We don't want to create duplicates!
+            const q = query(
+                alertsRef, 
+                where("userId", "==", userId), 
+                where("status", "==", "Active")
+            );
+            
+            const existingAlerts = await getDocs(q);
+
+            // 2. If NO active alert exists, create one!
+            if (existingAlerts.empty) {
+                console.log(`Generating new SOS Alert for ${userData.fullName}...`);
+                
+                try {
+                    await addDoc(alertsRef, {
+                        userId: userId,
+                        userName: userData.fullName || "Unknown User",
+                        mobile: userData.mobile || "N/A",
+                        type: "SOS - Emergency", // This triggers your Red Badge CSS
+                        status: "Active",
+                        timestamp: serverTimestamp(), // Uses server time
+                        location: {
+                            lat: userData.lat || 0,
+                            lng: userData.lng || 0
+                        }
+                    });
+                    console.log("Alert generated successfully.");
+                } catch (error) {
+                    console.error("Error generating alert:", error);
+                }
+            } else {
+                // console.log("Active alert already exists for this user. Skipping.");
+            }
+        }
+
+
+        // ======================================================
+        // PART 2: DISPLAY THE ALERTS (Your Existing Table Logic)
+        // ======================================================
+
+        const alertsQuery = query(collection(db, "alerts"), orderBy("timestamp", "desc"));
+
+        onSnapshot(alertsQuery, (snapshot) => {
             tableBody.innerHTML = ""; 
 
             if (!snapshot.empty) {
                 snapshot.forEach((doc) => {
                     const alertData = doc.data();
                     
-                    // 1. Format Date
-                    let dateStr = "N/A";
+                    // Format Date
+                    let dateStr = "Just Now";
                     if (alertData.timestamp) {
-                        // Handle both Firestore Timestamp objects and standard JS timestamps
+                        // Handle Firestore timestamp vs Date object
                         const date = alertData.timestamp.toDate ? alertData.timestamp.toDate() : new Date(alertData.timestamp);
                         dateStr = date.toLocaleString('en-IN', { 
                             day: '2-digit', month: 'short', 
@@ -225,7 +298,7 @@
                         });
                     }
 
-                    // 2. Determine Badge Color based on Alert Type
+                    // Badge Logic
                     let badgeClass = "badge-safe";
                     let icon = "";
                     const type = alertData.type || "Unknown";
@@ -238,7 +311,6 @@
                         icon = '<i class="fa-solid fa-location-dot" style="margin-right:5px;"></i>';
                     }
 
-                    // 3. Render Row
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${dateStr}</td>
@@ -249,18 +321,17 @@
                         </td>
                         <td><strong>${alertData.userName || 'Unknown'}</strong></td>
                         <td>${alertData.mobile || 'N/A'}</td>
-                        <td>${alertData.status || 'Active'}</td>
+                        <td style="font-weight:bold; color: ${alertData.status === 'Active' ? '#dc2626' : '#16a34a'}">
+                            ${alertData.status || 'Active'}
+                        </td>
                     `;
                     tableBody.appendChild(row);
                 });
             } else {
                 tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No alerts found.</td></tr>';
             }
-        }, (error) => {
-            console.error("Firestore Error:", error);
-            // If the collection 'alerts' doesn't exist yet, this will also fire
-            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Listening for alerts... (Ensure 'alerts' collection exists)</td></tr>`;
         });
     </script>
 </body>
 </html>
+
