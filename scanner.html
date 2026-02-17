@@ -102,7 +102,39 @@
             // 2. Show the loading state
             document.getElementById('result-card').style.display = 'block';
             document.getElementById('status-text').innerText = "Looking up User...";
-            imgElement.src = files;
+data.forEach(file => {
+    // 1. Get the Public URL
+    const { data: publicUrlData } = supabase
+        .storage
+        .from('secure-docs')
+        .getPublicUrl(`${decodedText}/${file.name}`);
+
+    const fileUrl = publicUrlData.publicUrl;
+    const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(file.name);
+
+    // 2. Create the element based on file type
+    const wrapper = document.createElement('div');
+    wrapper.style.margin = "20px";
+
+    if (isImage) {
+        // If it's an image, show a preview
+        const img = document.createElement('img');
+        img.src = fileUrl;
+        img.style.width = "200px"; // Small preview size
+        img.style.borderRadius = "8px";
+        img.style.border = "1px solid #ddd";
+        wrapper.appendChild(img);
+    } else {
+        // If it's a PDF/Doc, show a link with an icon
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.innerText = `📄 View Document: ${file.name}`;
+        link.target = "_blank";
+        wrapper.appendChild(link);
+    }
+
+    imgElement.appendChild(wrapper);
+});
             
             // 3. Fetch from Firestore
             fetchUserData(decodedText);
