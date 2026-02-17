@@ -29,7 +29,7 @@
           html5QrcodeScanner.pause(); 
 
     // 2. Fetch data in the background
-    let response = await fetch('/api/get-docs?userId=' + decodedText);
+    /*let response = await fetch('/api/get-docs?userId=' + decodedText);
     let data = await response.json();
 
     // 3. Update the HTML without reloading
@@ -38,7 +38,8 @@
         <a href="${data.docLink}">Download PDF</a>
         <br><br>
         <button onclick="html5QrcodeScanner.resume()">Scan Next Student</button>
-    `;
+    `;*/
+          window.location.href = `https://dycovrqatiyfniqssisb.supabase.co/storage/files/secure-docs/${userID}`;
 }
 
 function onScanFailure(error) {
