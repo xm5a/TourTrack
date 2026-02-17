@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
+        /* --- KEEPING YOUR EXISTING STYLES --- */
         :root {
             --bg-color: #f4f7fa;
             --sidebar-bg: #1f2937;
@@ -143,7 +144,9 @@
                         </div>
                         <div class="chart-card">
                             <h3>Live Status Breakdown</h3>
-                            <canvas id="statusChart"></canvas>
+                            <div style="height: 300px; display: flex; justify-content: center;">
+                                <canvas id="statusChart"></canvas>
+                            </div>
                         </div>
                     </div>
 
@@ -170,38 +173,28 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        // Switched 'getDocs' to 'onSnapshot' for real-time updates
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-        // CONFIGURATION
-       const firebaseConfig = {
-
-  apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
-
-  authDomain: "tour-track-ddb18.firebaseapp.com",
-
-  projectId: "tour-track-ddb18",
-
-  storageBucket: "tour-track-ddb18.firebasestorage.app",
-
-  messagingSenderId: "426865781508",
-
-  appId: "1:426865781508:web:8fb7a409f00c536955be51",
-
-  measurementId: "G-TQZT1H6PPS"
-
-};
-
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
+            authDomain: "tour-track-ddb18.firebaseapp.com",
+            projectId: "tour-track-ddb18",
+            storageBucket: "tour-track-ddb18.firebasestorage.app",
+            messagingSenderId: "426865781508",
+            appId: "1:426865781508:web:8fb7a409f00c536955be51",
+            measurementId: "G-TQZT1H6PPS"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const TOURIST_COLLECTION = "users";
 
-        // Global Chart Instance (to update it later)
         let statusChartInstance = null;
 
         // --- 1. INITIALIZE CHARTS ---
         function initCharts() {
-            // A. Volume Chart (Static Data for Demo)
+            // A. Volume Chart (Still Static - Time series needs separate history DB)
             const ctxVol = document.getElementById('volumeChart').getContext('2d');
             new Chart(ctxVol, {
                 type: 'line',
@@ -209,7 +202,7 @@
                     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
                     datasets: [{
                         label: 'Tourists',
-                        data: [120, 190, 300, 500, 200, 300], // Mock Data
+                        data: [120, 190, 300, 500, 200, 300],
                         borderColor: '#2563eb',
                         backgroundColor: 'rgba(37, 99, 235, 0.1)',
                         tension: 0.4,
@@ -219,87 +212,102 @@
                 options: { maintainAspectRatio: false, responsive: true }
             });
 
-            // B. Status Chart (Will be updated with Real Data)
+            // B. Status Chart - Initial Setup (Data will come from Snapshot)
             const ctxStat = document.getElementById('statusChart').getContext('2d');
             statusChartInstance = new Chart(ctxStat, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Active', 'SOS / Missing'],
+                    labels: ['Safe / Active', 'SOS / Danger'],
                     datasets: [{
-                        data: [0, 0], // Starting empty
+                        data: [0, 0], // Init with zero
                         backgroundColor: ['#16a34a', '#dc2626'],
-                        borderWidth: 0
+                        hoverOffset: 4
                     }]
                 },
-                options: { maintainAspectRatio: false, responsive: true }
+                options: { 
+                    maintainAspectRatio: false, 
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
             });
         }
 
-        // --- 2. FETCH DATA & UPDATE ---
-        async function generateReport() {
-            try {
-                const querySnapshot = await getDocs(collection(db, TOURIST_COLLECTION));
-                const totalCount = querySnapshot.size;
+        // --- 2. REAL-TIME DATA LISTENER ---
+        function startLiveUpdates() {
+            // onSnapshot runs every time something changes in Firebase
+            onSnapshot(collection(db, TOURIST_COLLECTION), (snapshot) => {
                 
-                document.getElementById('total-tourists').innerText = totalCount;
-
-                const tableBody = document.getElementById('report-table-body');
-                let rows = '';
                 let sosCount = 0;
                 let activeCount = 0;
+                let tableRows = '';
+                const totalCount = snapshot.size;
 
-                querySnapshot.forEach((doc) => {
+                snapshot.forEach((doc) => {
                     const data = doc.data();
-                    const id = doc.id.substring(0,8) + "...";
-                    const name = data.fullName || "Unknown";
-                    const coords = `${data.lat?.toFixed(4) || 0}, ${data.lng?.toFixed(4) || 0}`;
-                    const status = data.status || "Active";
-
-                    if(status === 'SOS' || status === 'MISSING') {
+                    
+                    // --- THE KEY LOGIC CHANGE ---
+                    // Check if 'sos' field is explicitly true
+                    const isSOS = data.sos === true; 
+                    
+                    if (isSOS) {
                         sosCount++;
                     } else {
                         activeCount++;
                     }
 
-                    rows += `
+                    // Prepare Table Row Data
+                    const id = doc.id.substring(0,8) + "...";
+                    const name = data.fullName || "Unknown";
+                    // Handle missing lat/lng gracefully
+                    const lat = data.lat !== undefined ? data.lat.toFixed(4) : "0.0000";
+                    const lng = data.lng !== undefined ? data.lng.toFixed(4) : "0.0000";
+                    const coords = `${lat}, ${lng}`;
+
+                    // Badge Logic
+                    const badgeColor = isSOS ? '#fee2e2' : '#dcfce7'; // Red bg vs Green bg
+                    const textColor = isSOS ? '#991b1b' : '#166534'; // Dark red text vs Dark green text
+                    const statusText = isSOS ? 'SOS ALERT' : 'Safe';
+
+                    tableRows += `
                         <tr>
                             <td style="font-family:monospace; font-weight:bold">${id}</td>
                             <td>${name}</td>
                             <td>${coords}</td>
                             <td>
                                 <span style="
-                                    padding: 4px 8px; 
-                                    border-radius: 12px; 
-                                    background: ${status === 'Active' ? '#dcfce7' : '#fee2e2'}; 
-                                    color: ${status === 'Active' ? '#166534' : '#991b1b'}; 
-                                    font-size: 0.85rem; font-weight: 600;">
-                                    ${status}
+                                    padding: 4px 12px; 
+                                    border-radius: 99px; 
+                                    background: ${badgeColor}; 
+                                    color: ${textColor}; 
+                                    font-size: 0.75rem; font-weight: 700;">
+                                    ${statusText}
                                 </span>
                             </td>
                         </tr>
                     `;
                 });
 
-                tableBody.innerHTML = rows || '<tr><td colspan="4" style="text-align:center">No records found.</td></tr>';
+                // Update DOM Elements
+                document.getElementById('total-tourists').innerText = totalCount;
                 document.getElementById('total-alerts').innerText = sosCount;
+                document.getElementById('report-table-body').innerHTML = tableRows || '<tr><td colspan="4" style="text-align:center">No users found.</td></tr>';
 
-                // --- 3. UPDATE CHART WITH REAL DATA ---
+                // Update Chart Dynamically
                 if (statusChartInstance) {
                     statusChartInstance.data.datasets[0].data = [activeCount, sosCount];
-                    statusChartInstance.update();
+                    statusChartInstance.update(); // Animates the change
                 }
 
-            } catch (error) {
-                console.error("Error fetching report data:", error);
-                document.getElementById('report-table-body').innerHTML = `<tr><td colspan="4" style="color:red; text-align:center">Error: ${error.message}</td></tr>`;
-            }
+            }, (error) => {
+                console.error("Firebase Snapshot Error:", error);
+            });
         }
 
         // Initialize
         initCharts();
-        generateReport();
+        startLiveUpdates();
     </script>
 </body>
 </html>
-
-
