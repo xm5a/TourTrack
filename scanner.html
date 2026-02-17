@@ -65,121 +65,109 @@
         </div>
     </div>
 
-    <script type="module">
-        // --- FIREBASE SETUP ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+<script type="module">
+    // --- FIREBASE SETUP ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-        // YOUR CONFIG
-        const firebaseConfig = {
-            apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
-            authDomain: "tour-track-ddb18.firebaseapp.com",
-            projectId: "tour-track-ddb18",
-            storageBucket: "tour-track-ddb18.firebasestorage.app",
-            messagingSenderId: "426865781508",
-            appId: "1:426865781508:web:8fb7a409f00c536955be51",
-            measurementId: "G-TQZT1H6PPS"
-        };
-        const SUPABASE_URL = 'https://dycovrqatiyfniqssisb.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y292cnFhdGl5Zm5pcXNzaXNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxOTM0OTksImV4cCI6MjA4Mjc2OTQ5OX0.cAx_nxGS4jRZB5tH7Sro8FCjb8nhv6RIbLXdRS-g9Gc';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const firebaseConfig = {
+        apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
+        authDomain: "tour-track-ddb18.firebaseapp.com",
+        projectId: "tour-track-ddb18",
+        storageBucket: "tour-track-ddb18.firebasestorage.app",
+        messagingSenderId: "426865781508",
+        appId: "1:426865781508:web:8fb7a409f00c536955be51",
+        measurementId: "G-TQZT1H6PPS"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const SUPABASE_URL = 'https://dycovrqatiyfniqssisb.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y292cnFhdGl5Zm5pcXNzaXNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxOTM0OTksImV4cCI6MjA4Mjc2OTQ5OX0.cAx_nxGS4jRZB5tH7Sro8FCjb8nhv6RIbLXdRS-g9Gc';
+    
+    // FIX 1: Use window.supabase because of the CDN import
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- SCANNER LOGIC ---
-        const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        async function onScanSuccess(decodedText, decodedResult) {
-            console.log(`Scanned ID: ${decodedText}`);
-            const imgElement = document.getElementById('user-doc-image');
-            const { data, error } = await supabase.storage.from('secure-docs').list(decodedText);
-            const files = data.map(file => {
-    const { data: publicUrlData } = supabase.storage.from('secure-docs').getPublicUrl(`${decodedText}/${file.name}`);}
-            // 1. Stop the camera immediately
-            scanner.clear();
+    // --- SCANNER LOGIC ---
+    const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
 
-            // 2. Show the loading state
-            document.getElementById('result-card').style.display = 'block';
-            document.getElementById('status-text').innerText = "Looking up User...";
-data.forEach(file => {
-    // 1. Get the Public URL
-    const { data: publicUrlData } = supabase
-        .storage
-        .from('secure-docs')
-        .getPublicUrl(`${decodedText}/${file.name}`);
+    // FIX 2: Correctly scoped function
+    async function onScanSuccess(decodedText) {
+        console.log(`Scanned ID: ${decodedText}`);
+        
+        // Stop the camera
+        scanner.clear();
 
-    const fileUrl = publicUrlData.publicUrl;
-    const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(file.name);
+        // Show UI
+        document.getElementById('result-card').style.display = 'block';
+        document.getElementById('status-text').innerText = "Fetching Data...";
 
-    // 2. Create the element based on file type
-    const wrapper = document.createElement('div');
-    wrapper.style.margin = "20px";
-
-    if (isImage) {
-        // If it's an image, show a preview
-        const img = document.createElement('img');
-        img.src = fileUrl;
-        img.style.width = "200px"; // Small preview size
-        img.style.borderRadius = "8px";
-        img.style.border = "1px solid #ddd";
-        wrapper.appendChild(img);
-    } else {
-        // If it's a PDF/Doc, show a link with an icon
-        const link = document.createElement('a');
-        link.href = fileUrl;
-        link.innerText = `📄 View Document: ${file.name}`;
-        link.target = "_blank";
-        wrapper.appendChild(link);
+        // 1. Fetch Documents from Supabase
+        await fetchSupabaseDocs(decodedText);
+        
+        // 2. Fetch User Data from Firestore
+        await fetchUserData(decodedText);
     }
 
-    imgElement.appendChild(wrapper);
-});
+    async function fetchSupabaseDocs(userId) {
+        const resultContainer = document.getElementById('result-card');
+        const { data, error } = await supabase.storage.from('secure-docs').list(userId);
+
+        if (error) {
+            console.error("Supabase Error:", error);
+            return;
+        }
+
+        // Remove old images/links if any
+        const existingDocs = document.querySelectorAll('.doc-item');
+        existingDocs.forEach(el => el.remove());
+
+        data.forEach(file => {
+            const { data: urlData } = supabase.storage.from('secure-docs').getPublicUrl(`${userId}/${file.name}`);
+            const fileUrl = urlData.publicUrl;
             
-            // 3. Fetch from Firestore
-            fetchUserData(decodedText);
-        }
-
-        async function fetchUserData(userId) {
-            try {
-                // Reference the specific document using the Scanned ID
-                const docRef = doc(db, "users", userId);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    
-                    // --- SUCCESS: RENDER DATA ---
-                    document.getElementById('status-text').style.display = 'none'; // Hide "Loading"
-                    document.getElementById('user-name').innerText = data.fullName || "Unknown Name";
-                    document.getElementById('user-info').innerText = `Nationality: ${data.nationality || 'N/A'} | Status: ${data.status || 'Active'}`;
-
-                    // --- THE IMPORTANT PART: SIGNED URL ---
-                    
-                    
-                    /*if (data.documents) {
-                        imgElement.src = data.documents;
-                        imgElement.style.display = 'inline-block';
-                    } else {
-                        // Fallback if no URL exists
-                        imgElement.style.display = 'none';
-                        alert("User found, but no Document Image (signedUrl) attached.");
-                    }*/
-                    
-
-                } else {
-                    document.getElementById('status-text').innerHTML = `<span class="error">User ID Not Found!</span>`;
-                    document.getElementById('user-doc-image').style.display = 'none';
-                }
-            } catch (error) {
-                console.error("Error fetching user:", error);
-                document.getElementById('status-text').innerText = "Database Error.";
+            const wrapper = document.createElement('div');
+            wrapper.className = 'doc-item';
+            
+            // Check if it's an image
+            if (/\.(jpg|jpeg|png|webp|gif)$/i.test(file.name)) {
+                const img = document.createElement('img');
+                img.src = fileUrl;
+                img.classList.add('user-photo'); // Reusing your existing style
+                wrapper.appendChild(img);
+            } else {
+                const link = document.createElement('a');
+                link.href = fileUrl;
+                link.innerText = `📄 View ${file.name}`;
+                link.target = "_blank";
+                link.className = 'btn'; 
+                link.style.display = 'block';
+                wrapper.appendChild(link);
             }
+            resultContainer.appendChild(wrapper);
+        });
+    }
+
+    async function fetchUserData(userId) {
+        try {
+            const docRef = doc(db, "users", userId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                document.getElementById('status-text').style.display = 'none';
+                document.getElementById('user-name').innerText = data.fullName || "Unknown Name";
+                document.getElementById('user-info').innerText = `Nationality: ${data.nationality || 'N/A'} | Status: ${data.status || 'Active'}`;
+            } else {
+                document.getElementById('status-text').innerHTML = `<span class="error">User ID Not Found in Database!</span>`;
+            }
+        } catch (error) {
+            console.error("Firestore Error:", error);
         }
+    }
 
-        // Start the scanner
-        scanner.render(onScanSuccess);
-    </script>
-
+    scanner.render(onScanSuccess);
+</script>
 </body>
 </html>
