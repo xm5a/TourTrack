@@ -19,13 +19,26 @@
     <script>
       function onScanSuccess(decodedText, decodedResult) {
     // 1. Handle the success! 'decodedText' is your User ID.
-    console.log(`Scan result: ${decodedText}`);
+    //console.log(`Scan result: ${decodedText}`);
 
     // 2. Stop the scanning (optional, prevents repeated API calls)
-    html5QrcodeScanner.clear();
+    //html5QrcodeScanner.clear();
 
     // 3. Fetch documents from your backend
-    fetchDocuments(decodedText);
+    //fetchDocuments(decodedText);
+          html5QrcodeScanner.pause(); 
+
+    // 2. Fetch data in the background
+    let response = await fetch('/api/get-docs?userId=' + decodedText);
+    let data = await response.json();
+
+    // 3. Update the HTML without reloading
+    document.getElementById('result-area').innerHTML = `
+        <h3>Documents for ${data.name}</h3>
+        <a href="${data.docLink}">Download PDF</a>
+        <br><br>
+        <button onclick="html5QrcodeScanner.resume()">Scan Next Student</button>
+    `;
 }
 
 function onScanFailure(error) {
