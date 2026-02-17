@@ -290,7 +290,7 @@
                             body: JSON.stringify({
                                 description: name,
                                 type: 'polygon',
-                                coordinates: feature.geometry.coordinates, // Mapbox Draw format matches Radar
+                                coordinates: feature.geometry.coordinates[0], // Mapbox Draw format matches Radar
                                 metadata: { riskLevel: risk }
                             })
                         });
@@ -349,4 +349,5 @@
     </script>
 </body>
 </html>
+
 
