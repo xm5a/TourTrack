@@ -225,7 +225,7 @@
             </div>
         </div>
     </main>
-<script type="module">
+    <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
@@ -248,7 +248,7 @@
 
     const touristMarkers = {};
     const geofenceTimers = {}; 
-    const loadedGeofences = [];
+    let loadedGeofences = []; // Changed to let
 
     const map = Radar.ui.map({
         container: 'map-container',
@@ -257,40 +257,16 @@
         zoom: 13
     });
 
-    // --- 1. GEOFENCE FETCH ---
-    async function setupGeofences() {
-        try {
-            const response = await fetch('https://api.radar.io/v1/geofences?tag=safety-zone&limit=100', {
-                headers: { 'Authorization': RADAR_SK }
-            });
-            const data = await response.json();
-            const fences = data.geofences || [];
-            document.getElementById('HRisk').innerText = fences.length;
-
-            map.on('load', () => {
-                fences.forEach(fence => {
-                    loadedGeofences.push(fence);
-                    const sourceId = `source-${fence._id}`;
-                    map.addSource(sourceId, { type: 'geojson', data: { type: 'Feature', geometry: fence.geometry } });
-                    map.addLayer({
-                        id: `layer-${fence._id}`, type: 'fill', source: sourceId,
-                        paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.2, 'fill-outline-color': '#111827' }
-                    });
-                });
-                console.log("Radar Geofences Loaded:", loadedGeofences.map(f => f.externalId));
-            });
-        } catch (e) { console.error("Radar Fetch Error:", e); }
-    }
-
-    // --- 2. THE WATCHER ---
+    // 1. IMPROVED POLYGON CHECK
     function isPointInPolygon(point, vs) {
-        // Robust check for nested coordinate arrays
+        if (!vs || !Array.isArray(vs)) return false;
+        // Radar gives coordinates as [[[lng, lat], ...]]
         const polygon = Array.isArray(vs[0][0]) ? vs[0] : vs; 
-        var x = point[0], y = point[1], inside = false;
-        for (var i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            var xi = polygon[i][0], yi = polygon[i][1];
-            var xj = polygon[j][0], yj = polygon[j][1];
-            var intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        let x = point[0], y = point[1], inside = false;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            let xi = polygon[i][0], yi = polygon[i][1];
+            let xj = polygon[j][0], yj = polygon[j][1];
+            let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
             if (intersect) inside = !inside;
         }
         return inside;
@@ -302,67 +278,95 @@
             await updateDoc(doc(db, "users", userId), { 
                 sos: true,
                 autoSOS: true,
-                sosReason: `User left ${zoneName} for > 30s`
+                sosReason: `Left assigned zone: ${zoneName}`
             });
-        } catch (e) { console.error("Firebase Update Failed:", e); }
+        } catch (e) { console.error("Firebase update error:", e); }
     }
 
-    // --- 3. LIVE MONITORING ---
-    onSnapshot(collection(db, "users"), (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-            const data = change.doc.data();
-            const id = change.doc.id;
+    // 2. FETCH GEOFENCES FIRST
+    async function startSystem() {
+        try {
+            console.log("System: Fetching Radar zones...");
+            const response = await fetch('https://api.radar.io/v1/geofences?tag=safety-zone&limit=100', {
+                headers: { 'Authorization': RADAR_SK }
+            });
+            const data = await response.json();
+            loadedGeofences = data.geofences || [];
+            document.getElementById('HRisk').innerText = loadedGeofences.length;
 
-            if (data.lat && data.lng) {
-                const lng = parseFloat(data.lng);
-                const lat = parseFloat(data.lat);
-                const isSos = data.sos === true || String(data.sos).toLowerCase() === "true";
+            // Wait for map load before adding layers
+            map.on('load', () => {
+                loadedGeofences.forEach(fence => {
+                    const sourceId = `source-${fence._id}`;
+                    map.addSource(sourceId, { type: 'geojson', data: { type: 'Feature', geometry: fence.geometry } });
+                    map.addLayer({
+                        id: `layer-${fence._id}`, type: 'fill', source: sourceId,
+                        paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.2, 'fill-outline-color': '#111827' }
+                    });
+                });
+                console.log("System: Radar zones ready. Starting Firebase listener...");
+                initFirebaseListener(); // Now start watching users
+            });
+        } catch (e) { console.error("System Init Error:", e); }
+    }
 
-                // Safety Logic
-                if (data.geofenceassign) {
-                    const assigned = loadedGeofences.find(f => f.externalId === data.geofenceassign);
-                    
-                    if (assigned) {
-                        const isInside = isPointInPolygon([lng, lat], assigned.geometry.coordinates);
+    // 3. FIREBASE LISTENER (Wrapped in function)
+    function initFirebaseListener() {
+        onSnapshot(collection(db, "users"), (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                const data = change.doc.data();
+                const id = change.doc.id;
+
+                // VALIDATE NUMBERS: Fixes the "Found Null" console errors
+                if (typeof data.lat === 'number' && typeof data.lng === 'number') {
+                    const lng = data.lng;
+                    const lat = data.lat;
+                    const isSos = data.sos === true || String(data.sos).toLowerCase() === "true";
+
+                    // SAFETY WATCHER
+                    if (data.geofenceassign) {
+                        const assigned = loadedGeofences.find(f => f.externalId === data.geofenceassign);
                         
-                        if (!isInside && !isSos) {
-                            if (!geofenceTimers[id]) {
-                                console.warn(`WATCHER: User ${id} left ${assigned.description}. Countdown started (30s).`);
-                                geofenceTimers[id] = setTimeout(() => triggerAutoSOS(id, assigned.description), 30000);
-                            }
-                        } else {
-                            if (geofenceTimers[id]) {
-                                console.log(`WATCHER: User ${id} is safe. Timer cleared.`);
-                                clearTimeout(geofenceTimers[id]);
-                                delete geofenceTimers[id];
+                        if (assigned) {
+                            const isInside = isPointInPolygon([lng, lat], assigned.geometry.coordinates);
+                            
+                            if (!isInside && !isSos) {
+                                if (!geofenceTimers[id]) {
+                                    console.warn(`[WATCHER] User ${id} LEFT ${assigned.description}. Countdown started (30s).`);
+                                    geofenceTimers[id] = setTimeout(() => triggerAutoSOS(id, assigned.description), 30000);
+                                }
+                            } else {
+                                if (geofenceTimers[id]) {
+                                    console.log(`[WATCHER] User ${id} is SAFE. Timer cleared.`);
+                                    clearTimeout(geofenceTimers[id]);
+                                    delete geofenceTimers[id];
+                                }
                             }
                         }
+                    }
+
+                    // MARKER MANAGEMENT
+                    if (touristMarkers[id]) {
+                        touristMarkers[id].setLngLat([lng, lat]);
+                        touristMarkers[id].getElement().style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
                     } else {
-                        // Diagnostic: Check if IDs actually match
-                        console.debug(`WATCHER: User has assigned ID "${data.geofenceassign}" but no matching Radar zone found.`);
+                        const el = document.createElement('div');
+                        el.className = 'marker-pulse';
+                        el.style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
+                        el.style.width = '15px'; el.style.height = '15px';
+                        el.style.borderRadius = '50%'; el.style.border = '2px solid white';
+                        touristMarkers[id] = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
                     }
                 }
-
-                // Marker Updates
-                if (touristMarkers[id]) {
-                    touristMarkers[id].setLngLat([lng, lat]);
-                    touristMarkers[id].getElement().style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
-                } else {
-                    const el = document.createElement('div');
-                    el.className = 'marker-pulse';
-                    el.style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
-                    el.style.width = '15px'; el.style.height = '15px';
-                    el.style.borderRadius = '50%'; el.style.border = '2px solid white';
-                    touristMarkers[id] = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
-                }
-            }
+            });
+            document.getElementById("activetcount").innerText = Object.keys(touristMarkers).length;
         });
-        document.getElementById("activetcount").innerText = Object.keys(touristMarkers).length;
-    });
+    }
 
-    setupGeofences();
+    startSystem();
 </script>
 </body>
 </html>
+
 
 
