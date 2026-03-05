@@ -148,11 +148,13 @@
     
     Radar.initialize(RADAR_PK);
 
+    const maplibregl = Radar.ui.maplibregl;
     const touristMarkers = {};
     const touristData = {}; 
+    const userPreviousState = {}; // Tracks { sos: bool, insideZones: [] }
+    const loadedGeofences = [];
     let alertCounter = 0;
 
-    // --- 1. INITIALIZE RADAR MAP ---
     const map = Radar.ui.map({
         container: 'map-container',
         style: 'radar-default-v1',
@@ -160,8 +162,32 @@
         zoom: 13
     });
 
-    // Use Radar's internal reference to MapLibre to avoid "not defined" errors
-    const maplibregl = Radar.ui.maplibregl;
+    // --- 1. LOGGING ENGINE ---
+    function pushToLog(type, message, id) {
+        const feed = document.getElementById('alerts-feed');
+        if(feed.querySelector('div[style*="text-align:center"]')) feed.innerHTML = '';
+
+        const config = {
+            sos: { icon: 'fa-triangle-exclamation', color: '#dc2626' },
+            entry: { icon: 'fa-door-open', color: '#ea580c' },
+            exit: { icon: 'fa-door-closed', color: '#10b981' },
+            join: { icon: 'fa-user-plus', color: '#3b82f6' },
+            leave: { icon: 'fa-user-minus', color: '#6b7280' }
+        };
+
+        const theme = config[type] || config.join;
+        const html = `
+            <div class="alert-item">
+                <i class="fa-solid ${theme.icon}" style="color: ${theme.color}"></i>
+                <div class="alert-details">
+                    <p>${message}</p>
+                    <span>ID: ${id.substring(0,8)}... • ${new Date().toLocaleTimeString()}</span>
+                </div>
+            </div>`;
+        
+        feed.insertAdjacentHTML('afterbegin', html);
+        if(feed.children.length > 15) feed.lastElementChild.remove();
+    }
 
     // --- 2. GEOFENCE LOGIC ---
     async function setupGeofences() {
@@ -175,83 +201,87 @@
 
             map.on('load', () => {
                 fences.forEach(fence => {
-                    const layerId = `layer-${fence._id}`;
+                    loadedGeofences.push(fence);
                     const sourceId = `source-${fence._id}`;
-
-                    map.addSource(sourceId, {
-                        type: 'geojson',
-                        data: {
-                            type: 'Feature',
-                            geometry: fence.geometry,
-                            properties: { 
-                                description: fence.description,
-                                risk: fence.metadata?.riskLevel 
-                            }
-                        }
-                    });
-
+                    map.addSource(sourceId, { type: 'geojson', data: { type: 'Feature', geometry: fence.geometry } });
                     map.addLayer({
-                        id: layerId,
+                        id: `layer-${fence._id}`,
                         type: 'fill',
                         source: sourceId,
                         paint: {
                             'fill-color': fence.metadata?.riskLevel === 'prohibited' ? '#ef4444' : '#f59e0b',
-                            'fill-opacity': 0.3,
+                            'fill-opacity': 0.25,
                             'fill-outline-color': '#111827'
                         }
                     });
-
-                    // Click popup for occupants
-                    map.on('click', layerId, (e) => {
-                        const occupants = Object.entries(touristData)
-                            .filter(([id, data]) => isPointInPolygon([data.lng, data.lat], fence.geometry.coordinates[0]))
-                            .map(([id]) => id.substring(0, 8))
-                            .join(', ');
-
-                        new maplibregl.Popup()
-                            .setLngLat(e.lngLat)
-                            .setHTML(`
-                                <div style="padding:8px; font-family: sans-serif;">
-                                    <strong style="display:block; margin-bottom:4px;">${fence.description}</strong>
-                                    <span style="font-size:0.75rem; color:#6b7280;">Risk: ${fence.metadata?.riskLevel || 'N/A'}</span>
-                                    <hr style="margin:8px 0; border:0; border-top:1px solid #eee;">
-                                    <strong>Occupants:</strong><br>
-                                    <span style="font-family:monospace; font-size:0.8rem;">${occupants || 'None'}</span>
-                                </div>
-                            `)
-                            .addTo(map);
-                    });
                 });
             });
-        } catch (e) { console.error("Radar Error:", e); }
+        } catch (e) { console.error(e); }
+    }
+
+    function checkGeofenceTransitions(userId, lng, lat) {
+        const currentZones = loadedGeofences.filter(f => isPointInPolygon([lng, lat], f.geometry.coordinates[0]));
+        const prevState = userPreviousState[userId] || { insideZones: [] };
+        
+        const prevZoneIds = prevState.insideZones.map(z => z._id);
+        const currZoneIds = currentZones.map(z => z._id);
+
+        // Detect Entry
+        currentZones.forEach(z => {
+            if (!prevZoneIds.includes(z._id)) {
+                pushToLog('entry', `Entered: ${z.description}`, userId);
+            }
+        });
+
+        // Detect Exit
+        prevState.insideZones.forEach(z => {
+            if (!currZoneIds.includes(z._id)) {
+                pushToLog('exit', `Exited: ${z.description}`, userId);
+            }
+        });
+
+        return currentZones;
     }
 
     function isPointInPolygon(point, vs) {
-        var x = point[0], y = point[1];
-        var inside = false;
+        var x = point[0], y = point[1], inside = false;
         for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-            var xi = vs[i][0], yi = vs[i][1];
-            var xj = vs[j][0], yj = vs[j][1];
+            var xi = vs[i][0], yi = vs[i][1], xj = vs[j][0], yj = vs[j][1];
             var intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
             if (intersect) inside = !inside;
         }
         return inside;
     }
 
-    // --- 3. LIVE FIREBASE DATA ---
+    // --- 3. FIREBASE SYNC ---
     onSnapshot(collection(db, "users"), (snapshot) => {
         snapshot.docChanges().forEach((change) => {
             const data = change.doc.data();
             const id = change.doc.id;
 
-            // Guard: Prevent "Found Null" errors by checking types
-            if (data.lat !== undefined && data.lng !== undefined && data.lat !== null && data.lng !== null) {
+            if (data.lat && data.lng) {
                 const lat = parseFloat(data.lat);
                 const lng = parseFloat(data.lng);
-                
-                touristData[id] = { lat, lng };
                 const isSos = data.sos === true || String(data.sos).toLowerCase() === "true";
+                
+                // Track Transitions
+                const currentZones = checkGeofenceTransitions(id, lng, lat);
+                const prevState = userPreviousState[id];
 
+                if (change.type === "added") {
+                    pushToLog('join', 'Tourist Online', id);
+                } else if (change.type === "modified" && prevState) {
+                    if (isSos && !prevState.sos) {
+                        pushToLog('sos', 'CRITICAL: SOS Triggered', id);
+                        alertCounter++;
+                        document.getElementById("alert-count-display").innerText = alertCounter;
+                        map.flyTo({ center: [lng, lat], zoom: 15 });
+                    } else if (!isSos && prevState.sos) {
+                        pushToLog('exit', 'SOS Resolved/Off', id);
+                    }
+                }
+
+                // Update Marker
                 if (touristMarkers[id]) {
                     touristMarkers[id].setLngLat([lng, lat]);
                     touristMarkers[id].getElement().style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
@@ -261,27 +291,29 @@
                     el.style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
                     el.style.width = '15px'; el.style.height = '15px';
                     el.style.borderRadius = '50%'; el.style.border = '2px solid white';
-                    
-                    touristMarkers[id] = new maplibregl.Marker({ element: el })
-                        .setLngLat([lng, lat])
-                        .addTo(map);
+                    touristMarkers[id] = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
                 }
 
-                if (isSos && change.type === "modified") {
-                    alertCounter++;
-                    const counterEl = document.getElementById("alert-count-display");
-                    if(counterEl) counterEl.innerText = alertCounter;
+                // Save state for next iteration
+                userPreviousState[id] = { sos: isSos, insideZones: currentZones };
+            }
+
+            if (change.type === "removed") {
+                if (touristMarkers[id]) {
+                    touristMarkers[id].remove();
+                    delete touristMarkers[id];
+                    delete userPreviousState[id];
+                    pushToLog('leave', 'Tourist Disconnected', id);
                 }
             }
         });
-        
-        const countEl = document.getElementById("activetcount");
-        if(countEl) countEl.innerText = Object.keys(touristMarkers).length;
+        document.getElementById("activetcount").innerText = Object.keys(touristMarkers).length;
     });
 
     setupGeofences();
 </script>
 </body>
 </html>
+
 
 
