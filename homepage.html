@@ -23,7 +23,6 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* Firefox-Perfect Grid Layout */
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-body);
@@ -33,7 +32,7 @@
             overflow: hidden;
         }
 
-        /* --- SHARED SIDEBAR --- */
+        /* --- SIDEBAR --- */
         .sidebar {
             width: var(--sidebar-width);
             background-color: var(--sidebar-bg);
@@ -45,119 +44,39 @@
             flex-direction: column;
         }
 
-        .sidebar-header {
-            padding: 2.5rem 1.5rem;
-            font-weight: 700;
-            font-size: 1.25rem;
-            display: flex; align-items: center; gap: 12px;
-        }
-
+        .sidebar-header { padding: 2.5rem 1.5rem; font-weight: 700; font-size: 1.25rem; display: flex; align-items: center; gap: 12px; }
         .sidebar-nav { list-style: none; margin-top: 0.5rem; }
-        .sidebar-nav a {
-            display: flex; align-items: center; padding: 14px 24px;
-            color: #9ca3af; text-decoration: none; margin: 4px 16px;
-            border-radius: 8px; font-size: 0.95rem; transition: 0.2s;
-        }
+        .sidebar-nav a { display: flex; align-items: center; padding: 14px 24px; color: #9ca3af; text-decoration: none; margin: 4px 16px; border-radius: 8px; font-size: 0.95rem; transition: 0.2s; }
+        .sidebar-nav a:hover, .sidebar-nav a.active { color: #fff; background-color: var(--sidebar-hover); }
+        .sidebar-nav a.active { background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(31, 41, 55, 1) 100%); box-shadow: inset 4px 0 0 var(--accent-blue); }
 
-        .sidebar-nav a:hover, .sidebar-nav a.active {
-            color: #fff; background-color: var(--sidebar-hover);
-        }
+        /* --- CONTENT --- */
+        .main-content { grid-column: 2; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; }
+        .header { background: var(--glass-white); backdrop-filter: blur(12px); padding: 1.2rem 2.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 900; }
+        .header input { border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; width: 320px; outline: none; }
 
-        .sidebar-nav a.active {
-            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(31, 41, 55, 1) 100%);
-            box-shadow: inset 4px 0 0 var(--accent-blue);
-        }
-
-        /* --- MAIN CONTENT --- */
-        .main-content {
-            grid-column: 2;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .header {
-            background: var(--glass-white);
-            backdrop-filter: blur(12px);
-            padding: 1.2rem 2.5rem;
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            position: sticky; top: 0; z-index: 900;
-        }
-
-        .header input {
-            border: 1px solid var(--border-color);
-            padding: 10px 16px; border-radius: 8px; width: 320px; outline: none;
-        }
-
-        /* --- DASHBOARD GRID --- */
-        .dashboard-container {
-            padding: 2rem;
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            grid-template-rows: auto 1fr;
-            gap: 1.5rem;
-            flex-grow: 1;
-        }
-
-        .stats-grid {
-            grid-column: 1 / -1;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .stat-card {
-            background: white; border: 1px solid var(--border-color);
-            border-radius: 12px; padding: 1.5rem; display: flex; align-items: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-
-        .stat-card .icon {
-            width: 48px; height: 48px; border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; margin-right: 1.25rem;
-        }
-
+        .dashboard-container { padding: 2rem; display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: auto 1fr; gap: 1.5rem; flex-grow: 1; }
+        .stats-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+        .stat-card { background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .stat-card .icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-right: 1.25rem; }
         .icon.users { background: #eff6ff; color: #3b82f6; }
         .icon.alerts { background: #fef2f2; color: #ef4444; }
         .icon.zones { background: #fffbeb; color: #f59e0b; }
-
         .stat-card h3 { font-size: 1.75rem; font-weight: 700; color: #111827; }
-        .stat-card p { font-size: 0.85rem; color: #6b7280; font-weight: 500; }
 
-        /* Panels */
-        .panel {
-            background: white; border: 1px solid var(--border-color);
-            border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-
-        .panel-header {
-            padding: 1.25rem 1.5rem; font-weight: 700; border-bottom: 1px solid var(--border-color);
-        }
-
+        .panel { background: white; border: 1px solid var(--border-color); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .panel-header { padding: 1.25rem 1.5rem; font-weight: 700; border-bottom: 1px solid var(--border-color); }
         #map-container { width: 100%; height: 500px; background: #e2e8f0; }
 
-        /* Activity Feed */
+        /* Activity Feed Styles */
         .alerts-feed { flex-grow: 1; overflow-y: auto; max-height: 500px; }
-        .alert-item {
-            padding: 1.25rem; border-bottom: 1px solid var(--border-color);
-            display: flex; align-items: flex-start; gap: 12px;
-            animation: slideIn 0.3s ease-out;
-        }
+        .alert-item { padding: 1.25rem; border-bottom: 1px solid var(--border-color); display: flex; align-items: flex-start; gap: 12px; animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
-
-        .alert-item i { font-size: 1rem; margin-top: 3px; }
-        .alert-details p { font-size: 0.9rem; font-weight: 600; color: #111827; }
+        .alert-item i { font-size: 1.1rem; margin-top: 3px; }
+        .alert-details p { font-size: 0.9rem; font-weight: 600; color: #111827; line-height: 1.4; }
         .alert-details span { font-size: 0.75rem; color: #6b7280; }
 
-        .marker-pulse {
-            width: 15px; height: 15px; border-radius: 50%;
-            border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.2);
-            transition: transform 0.2s;
-        }
+        .marker-pulse { width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.2); transition: background-color 0.3s; }
     </style>
 </head>
 <body>
@@ -189,29 +108,20 @@
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="icon users"><i class="fa-solid fa-users"></i></div>
-                    <div>
-                        <h3 id="activetcount">0</h3>
-                        <p>Active Tourists</p>
-                    </div>
+                    <div><h3 id="activetcount">0</h3><p>Active Tourists</p></div>
                 </div>
                 <div class="stat-card">
                     <div class="icon alerts"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                    <div>
-                        <h3 id="alert-count-display">0</h3>
-                        <p>Active Alerts</p>
-                    </div>
+                    <div><h3 id="alert-count-display">0</h3><p>Active Alerts</p></div>
                 </div>
                 <div class="stat-card">
                     <div class="icon zones"><i class="fa-solid fa-draw-polygon"></i></div>
-                    <div>
-                        <h3 id="HRisk">0</h3>
-                        <p>Safety Zones</p>
-                    </div>
+                    <div><h3 id="HRisk">0</h3><p>Safety Zones</p></div>
                 </div>
             </div>
 
             <div class="panel">
-                <div class="panel-header">Live Geofence Map (Click zones for occupants)</div>
+                <div class="panel-header">Live Geofence Map</div>
                 <div id="map-container"></div>
             </div>
 
@@ -219,154 +129,212 @@
                 <div class="panel-header">System Activity Log</div>
                 <div class="alerts-feed" id="alerts-feed">
                     <div style="text-align:center; padding: 2rem; color: #9ca3af; font-size: 0.85rem;">
-                        Initializing live data stream...
+                        <i class="fa-solid fa-spinner fa-spin"></i> Booting system logs...
                     </div>
                 </div>
             </div>
         </div>
     </main>
+
     <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
-        authDomain: "tour-track-ddb18.firebaseapp.com",
-        projectId: "tour-track-ddb18",
-        storageBucket: "tour-track-ddb18.firebasestorage.app",
-        messagingSenderId: "426865781508",
-        appId: "1:426865781508:web:8fb7a409f00c536955be51"
-    };
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
+            authDomain: "tour-track-ddb18.firebaseapp.com",
+            projectId: "tour-track-ddb18",
+            storageBucket: "tour-track-ddb18.firebasestorage.app",
+            messagingSenderId: "426865781508",
+            appId: "1:426865781508:web:8fb7a409f00c536955be51"
+        };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const RADAR_PK = 'prj_live_pk_ed91d1d636ae3f3366727a2c648ba6a976e29d40';
-    const RADAR_SK = 'prj_live_sk_2f8e1e138dd5fcf9dbb5c3537ffb75b93c083021';
-    
-    Radar.initialize(RADAR_PK);
-    const maplibregl = Radar.ui.maplibregl;
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const RADAR_PK = 'prj_live_pk_ed91d1d636ae3f3366727a2c648ba6a976e29d40';
+        const RADAR_SK = 'prj_live_sk_2f8e1e138dd5fcf9dbb5c3537ffb75b93c083021';
+        
+        Radar.initialize(RADAR_PK);
+        const maplibregl = Radar.ui.maplibregl;
 
-    const touristMarkers = {};
-    const geofenceTimers = {}; 
-    let loadedGeofences = []; // Changed to let
+        const touristMarkers = {};
+        const userPreviousState = {}; 
+        const geofenceTimers = {}; 
+        let loadedGeofences = [];
+        let alertCounter = 0;
 
-    const map = Radar.ui.map({
-        container: 'map-container',
-        style: 'radar-default-v1',
-        center: [72.978088, 19.218331],
-        zoom: 13
-    });
+        const map = Radar.ui.map({
+            container: 'map-container',
+            style: 'radar-default-v1',
+            center: [72.978088, 19.218331],
+            zoom: 13
+        });
 
-    // 1. IMPROVED POLYGON CHECK
-    function isPointInPolygon(point, vs) {
-        if (!vs || !Array.isArray(vs)) return false;
-        // Radar gives coordinates as [[[lng, lat], ...]]
-        const polygon = Array.isArray(vs[0][0]) ? vs[0] : vs; 
-        let x = point[0], y = point[1], inside = false;
-        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            let xi = polygon[i][0], yi = polygon[i][1];
-            let xj = polygon[j][0], yj = polygon[j][1];
-            let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-            if (intersect) inside = !inside;
+        // --- 1. SYSTEM LOGGING ---
+        function pushToLog(type, message, id) {
+            const feed = document.getElementById('alerts-feed');
+            if(feed.querySelector('div[style*="text-align:center"]')) feed.innerHTML = '';
+
+            const config = {
+                sos: { icon: 'fa-triangle-exclamation', color: '#dc2626' },
+                entry: { icon: 'fa-door-open', color: '#ea580c' },
+                exit: { icon: 'fa-door-closed', color: '#10b981' },
+                join: { icon: 'fa-user-plus', color: '#3b82f6' },
+                leave: { icon: 'fa-user-minus', color: '#6b7280' }
+            };
+
+            const theme = config[type] || config.join;
+            const html = `
+                <div class="alert-item">
+                    <i class="fa-solid ${theme.icon}" style="color: ${theme.color}"></i>
+                    <div class="alert-details">
+                        <p>${message}</p>
+                        <span>ID: ${id.substring(0,8)}... • ${new Date().toLocaleTimeString()}</span>
+                    </div>
+                </div>`;
+            
+            feed.insertAdjacentHTML('afterbegin', html);
+            if(feed.children.length > 15) feed.lastElementChild.remove();
         }
-        return inside;
-    }
 
-    async function triggerAutoSOS(userId, zoneName) {
-        console.error(`!!! AUTO-SOS ACTIVATED FOR ${userId} !!!`);
-        try {
-            await updateDoc(doc(db, "users", userId), { 
-                sos: true,
-                autoSOS: true,
-                sosReason: `Left assigned zone: ${zoneName}`
-            });
-        } catch (e) { console.error("Firebase update error:", e); }
-    }
+        // --- 2. GEOFENCE UTILITIES ---
+        function isPointInPolygon(point, vs) {
+            if (!vs || !Array.isArray(vs)) return false;
+            const polygon = Array.isArray(vs[0][0]) ? vs[0] : vs; 
+            let x = point[0], y = point[1], inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                let xi = polygon[i][0], yi = polygon[i][1];
+                let xj = polygon[j][0], yj = polygon[j][1];
+                let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
 
-    // 2. FETCH GEOFENCES FIRST
-    async function startSystem() {
-        try {
-            console.log("System: Fetching Radar zones...");
-            const response = await fetch('https://api.radar.io/v1/geofences?tag=safety-zone&limit=100', {
-                headers: { 'Authorization': RADAR_SK }
-            });
-            const data = await response.json();
-            loadedGeofences = data.geofences || [];
-            document.getElementById('HRisk').innerText = loadedGeofences.length;
-
-            // Wait for map load before adding layers
-            map.on('load', () => {
-                loadedGeofences.forEach(fence => {
-                    const sourceId = `source-${fence._id}`;
-                    map.addSource(sourceId, { type: 'geojson', data: { type: 'Feature', geometry: fence.geometry } });
-                    map.addLayer({
-                        id: `layer-${fence._id}`, type: 'fill', source: sourceId,
-                        paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.2, 'fill-outline-color': '#111827' }
-                    });
+        async function triggerAutoSOS(userId, zoneName) {
+            try {
+                await updateDoc(doc(db, "users", userId), { 
+                    sos: true, autoSOS: true, sosReason: `Left assigned zone: ${zoneName}`
                 });
-                console.log("System: Radar zones ready. Starting Firebase listener...");
-                initFirebaseListener(); // Now start watching users
-            });
-        } catch (e) { console.error("System Init Error:", e); }
-    }
+                pushToLog('sos', `AUTO-SOS: Boundary Breach (${zoneName})`, userId);
+            } catch (e) { console.error("AutoSOS failed:", e); }
+        }
 
-    // 3. FIREBASE LISTENER (Wrapped in function)
-    function initFirebaseListener() {
-        onSnapshot(collection(db, "users"), (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-                const data = change.doc.data();
-                const id = change.doc.id;
+        // --- 3. SYSTEM BOOTSTRAP ---
+        async function startSystem() {
+            try {
+                const response = await fetch('https://api.radar.io/v1/geofences?tag=safety-zone&limit=100', {
+                    headers: { 'Authorization': RADAR_SK }
+                });
+                const data = await response.json();
+                loadedGeofences = data.geofences || [];
+                document.getElementById('HRisk').innerText = loadedGeofences.length;
 
-                // VALIDATE NUMBERS: Fixes the "Found Null" console errors
-                if (typeof data.lat === 'number' && typeof data.lng === 'number') {
-                    const lng = data.lng;
-                    const lat = data.lat;
-                    const isSos = data.sos === true || String(data.sos).toLowerCase() === "true";
+                map.on('load', () => {
+                    loadedGeofences.forEach(fence => {
+                        const sourceId = `source-${fence._id}`;
+                        map.addSource(sourceId, { type: 'geojson', data: { type: 'Feature', geometry: fence.geometry } });
+                        map.addLayer({
+                            id: `layer-${fence._id}`, type: 'fill', source: sourceId,
+                            paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.2, 'fill-outline-color': '#111827' }
+                        });
+                    });
+                    initFirebaseListener();
+                });
+            } catch (e) { console.error(e); }
+        }
 
-                    // SAFETY WATCHER
-                    if (data.geofenceassign) {
-                        const assigned = loadedGeofences.find(f => f.externalId === data.geofenceassign);
-                        
-                        if (assigned) {
-                            const isInside = isPointInPolygon([lng, lat], assigned.geometry.coordinates);
-                            
-                            if (!isInside && !isSos) {
-                                if (!geofenceTimers[id]) {
-                                    console.warn(`[WATCHER] User ${id} LEFT ${assigned.description}. Countdown started (30s).`);
-                                    geofenceTimers[id] = setTimeout(() => triggerAutoSOS(id, assigned.description), 30000);
-                                }
-                            } else {
-                                if (geofenceTimers[id]) {
-                                    console.log(`[WATCHER] User ${id} is SAFE. Timer cleared.`);
+        // --- 4. LIVE LISTENER ---
+        function initFirebaseListener() {
+            onSnapshot(collection(db, "users"), (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data();
+                    const id = change.doc.id;
+
+                    if (typeof data.lat === 'number' && typeof data.lng === 'number') {
+                        const lng = data.lng, lat = data.lat;
+                        const isSos = data.sos === true || String(data.sos).toLowerCase() === "true";
+                        const prevState = userPreviousState[id] || { sos: false, insideZones: [] };
+
+                        // Detect Entry/Exit for general log
+                        const currentZones = loadedGeofences.filter(f => isPointInPolygon([lng, lat], f.geometry.coordinates));
+                        currentZones.forEach(z => {
+                            if (!prevState.insideZones.find(pz => pz._id === z._id)) pushToLog('entry', `Entered: ${z.description}`, id);
+                        });
+                        prevState.insideZones.forEach(z => {
+                            if (!currentZones.find(cz => cz._id === z._id)) pushToLog('exit', `Exited: ${z.description}`, id);
+                        });
+
+                        // Safety Watcher for Assigned Zone
+                        if (data.geofenceassign) {
+                            const assigned = loadedGeofences.find(f => f.externalId === data.geofenceassign);
+                            if (assigned) {
+                                const isInside = isPointInPolygon([lng, lat], assigned.geometry.coordinates);
+                                if (!isInside && !isSos) {
+                                    if (!geofenceTimers[id]) {
+                                        console.warn(`Countdown started for ${id}`);
+                                        geofenceTimers[id] = setTimeout(() => triggerAutoSOS(id, assigned.description), 30000);
+                                    }
+                                } else if (geofenceTimers[id]) {
                                     clearTimeout(geofenceTimers[id]);
                                     delete geofenceTimers[id];
                                 }
                             }
                         }
+
+                        // SOS Activation Event
+                        if (change.type === "added") {
+                            pushToLog('join', 'Tourist Online', id);
+                        } else if (isSos && !prevState.sos) {
+                            pushToLog('sos', 'CRITICAL: SOS Active', id);
+                            alertCounter++;
+                            document.getElementById("alert-count-display").innerText = alertCounter;
+                            map.flyTo({ center: [lng, lat], zoom: 15 });
+                        }
+
+                        // Marker Update
+                        if (touristMarkers[id]) {
+                            touristMarkers[id].setLngLat([lng, lat]);
+                            touristMarkers[id].getElement().style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
+                        } else {
+                            const el = document.createElement('div');
+                            el.className = 'marker-pulse';
+                            el.style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
+                            el.style.width = '15px'; el.style.height = '15px';
+                            el.style.borderRadius = '50%'; el.style.border = '2px solid white';
+                            touristMarkers[id] = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
+                        }
+
+                        userPreviousState[id] = { sos: isSos, insideZones: currentZones };
                     }
 
-                    // MARKER MANAGEMENT
-                    if (touristMarkers[id]) {
-                        touristMarkers[id].setLngLat([lng, lat]);
-                        touristMarkers[id].getElement().style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
-                    } else {
-                        const el = document.createElement('div');
-                        el.className = 'marker-pulse';
-                        el.style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
-                        el.style.width = '15px'; el.style.height = '15px';
-                        el.style.borderRadius = '50%'; el.style.border = '2px solid white';
-                        touristMarkers[id] = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
+                    if (change.type === "removed") {
+                        if (touristMarkers[id]) touristMarkers[id].remove();
+                        delete touristMarkers[id];
+                        delete userPreviousState[id];
+                        if (geofenceTimers[id]) clearTimeout(geofenceTimers[id]);
+                        pushToLog('leave', 'Tourist Offline', id);
                     }
+                });
+                document.getElementById("activetcount").innerText = Object.keys(touristMarkers).length;
+            });
+        }
+
+        // --- 5. SEARCH ---
+        window.searchTourist = function() {
+            const val = document.getElementById('dashboard-search').value.toLowerCase();
+            Object.keys(touristMarkers).forEach(id => {
+                const markerElement = touristMarkers[id].getElement();
+                if (id.toLowerCase().includes(val)) {
+                    markerElement.style.display = "block";
+                    if (val.length > 5) map.flyTo({ center: touristMarkers[id].getLngLat(), zoom: 15 });
+                } else {
+                    markerElement.style.display = "none";
                 }
             });
-            document.getElementById("activetcount").innerText = Object.keys(touristMarkers).length;
-        });
-    }
+        };
 
-    startSystem();
-</script>
+        startSystem();
+    </script>
 </body>
 </html>
-
-
-
