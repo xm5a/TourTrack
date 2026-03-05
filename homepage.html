@@ -128,173 +128,158 @@
             </div>
         </div>
     </main>
-
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
-            authDomain: "tour-track-ddb18.firebaseapp.com",
-            projectId: "tour-track-ddb18",
-            storageBucket: "tour-track-ddb18.firebasestorage.app",
-            messagingSenderId: "426865781508",
-            appId: "1:426865781508:web:8fb7a409f00c536955be51"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
+        authDomain: "tour-track-ddb18.firebaseapp.com",
+        projectId: "tour-track-ddb18",
+        storageBucket: "tour-track-ddb18.firebasestorage.app",
+        messagingSenderId: "426865781508",
+        appId: "1:426865781508:web:8fb7a409f00c536955be51"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const RADAR_PK = 'prj_live_pk_ed91d1d636ae3f3366727a2c648ba6a976e29d40';
-        const RADAR_SK = 'prj_live_sk_2f8e1e138dd5fcf9dbb5c3537ffb75b93c083021';
-        
-        Radar.initialize(RADAR_PK);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const RADAR_PK = 'prj_live_pk_ed91d1d636ae3f3366727a2c648ba6a976e29d40';
+    const RADAR_SK = 'prj_live_sk_2f8e1e138dd5fcf9dbb5c3537ffb75b93c083021';
+    
+    // Initialize Radar
+    Radar.initialize(RADAR_PK);
 
-        const touristMarkers = {};
-        const touristData = {}; // Stores live data for occupant checking
-        let alertCounter = 0;
+    const touristMarkers = {};
+    const touristData = {}; 
+    let alertCounter = 0;
 
-        // --- 1. RADAR MAP INIT ---
-        const map = Radar.ui.map({
-            container: 'map-container',
-            style: 'radar-default-v1',
-            center: [72.978088, 19.218331],
-            zoom: 13
-        });
+    // --- 1. RADAR MAP INIT ---
+    const map = Radar.ui.map({
+        container: 'map-container',
+        style: 'radar-default-v1',
+        center: [72.978088, 19.218331],
+        zoom: 13
+    });
 
-        // --- 2. LOAD GEOFENCES & INTERACTION ---
-        async function setupGeofences() {
-            try {
-                const response = await fetch('https://api.radar.io/v1/geofences?tag=safety-zone&limit=100', {
-                    headers: { 'Authorization': RADAR_SK }
-                });
-                const data = await response.json();
-                const fences = data.geofences || [];
-                document.getElementById('HRisk').innerText = fences.length;
+    // --- 2. GEOFENCE SETUP ---
+    async function setupGeofences() {
+        try {
+            const response = await fetch('https://api.radar.io/v1/geofences?tag=safety-zone&limit=100', {
+                headers: { 'Authorization': RADAR_SK }
+            });
+            const data = await response.json();
+            const fences = data.geofences || [];
+            document.getElementById('HRisk').innerText = fences.length;
 
-                map.on('load', () => {
-                    fences.forEach(fence => {
-                        const layerId = `layer-${fence._id}`;
-                        const sourceId = `source-${fence._id}`;
+            map.on('load', () => {
+                fences.forEach(fence => {
+                    const layerId = `layer-${fence._id}`;
+                    const sourceId = `source-${fence._id}`;
 
-                        map.addSource(sourceId, {
-                            type: 'geojson',
-                            data: {
-                                type: 'Feature',
-                                geometry: fence.geometry,
-                                properties: { 
-                                    description: fence.description,
-                                    risk: fence.metadata?.riskLevel || 'restricted'
-                                }
-                            }
-                        });
+                    map.addSource(sourceId, {
+                        type: 'geojson',
+                        data: {
+                            type: 'Feature',
+                            geometry: fence.geometry,
+                            properties: { description: fence.description }
+                        }
+                    });
 
-                        map.addLayer({
-                            id: layerId,
-                            type: 'fill',
-                            source: sourceId,
-                            paint: {
-                                'fill-color': fence.metadata?.riskLevel === 'prohibited' ? '#ef4444' : '#f59e0b',
-                                'fill-opacity': 0.3,
-                                'fill-outline-color': '#000'
-                            }
-                        });
+                    map.addLayer({
+                        id: layerId,
+                        type: 'fill',
+                        source: sourceId,
+                        paint: {
+                            'fill-color': fence.metadata?.riskLevel === 'prohibited' ? '#ef4444' : '#f59e0b',
+                            'fill-opacity': 0.3,
+                            'fill-outline-color': '#000'
+                        }
+                    });
 
-                        // CLICK EVENT: Show users inside this geofence
-                        map.on('click', layerId, (e) => {
-                            const occupants = Object.entries(touristData)
-                                .filter(([id, data]) => isPointInPolygon([data.lng, data.lat], fence.geometry.coordinates[0]))
-                                .map(([id]) => id.substring(0, 8))
-                                .join(', ');
+                    // Click to see occupants
+                    map.on('click', layerId, (e) => {
+                        const occupants = Object.entries(touristData)
+                            .filter(([id, data]) => isPointInPolygon([data.lng, data.lat], fence.geometry.coordinates[0]))
+                            .map(([id]) => id.substring(0, 8))
+                            .join(', ');
 
-                            new Radar.ui.Popup()
-                                .setLngLat(e.lngLat)
-                                .setHTML(`
-                                    <div style="padding:5px;">
-                                        <strong>${fence.description}</strong><br>
-                                        <small>Risk: ${fence.metadata?.riskLevel}</small><hr>
-                                        <strong>Occupant IDs:</strong><br>
-                                        ${occupants || 'None'}
-                                    </div>
-                                `)
-                                .addTo(map);
-                        });
+                        // FIX: Use maplibregl.Popup or Radar.ui.map's internal popup
+                        new maplibregl.Popup()
+                            .setLngLat(e.lngLat)
+                            .setHTML(`
+                                <div style="padding:5px; font-family: 'Inter', sans-serif;">
+                                    <strong>${fence.description}</strong><br>
+                                    <small>Risk: ${fence.metadata?.riskLevel || 'N/A'}</small><hr>
+                                    <strong>Occupants:</strong><br>
+                                    ${occupants || 'None'}
+                                </div>
+                            `)
+                            .addTo(map);
                     });
                 });
-            } catch (e) { console.error("Radar Sync Error:", e); }
+            });
+        } catch (e) { console.error("Radar Error:", e); }
+    }
+
+    // Point in Polygon Utility
+    function isPointInPolygon(point, vs) {
+        var x = point[0], y = point[1];
+        var inside = false;
+        for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+            var xi = vs[i][0], yi = vs[i][1];
+            var xj = vs[j][0], yj = vs[j][1];
+            var intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
         }
+        return inside;
+    }
 
-        // Helper: Point in Polygon math (Ray Casting)
-        function isPointInPolygon(point, vs) {
-            var x = point[0], y = point[1];
-            var inside = false;
-            for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-                var xi = vs[i][0], yi = vs[i][1];
-                var xj = vs[j][0], yj = vs[j][1];
-                var intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-                if (intersect) inside = !inside;
-            }
-            return inside;
-        }
+    // --- 3. FIREBASE SYNC ---
+    onSnapshot(collection(db, "users"), (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            const data = change.doc.data();
+            const id = change.doc.id;
 
-        // --- 3. FIREBASE & UI LOGIC ---
-        function updateUI(type, id) {
-            const feed = document.getElementById('alerts-feed');
-            if(feed.querySelector('div[style*="text-align:center"]')) feed.innerHTML = '';
-            const html = `
-                <div class="alert-item">
-                    <i class="fa-solid ${type === 'add' ? 'fa-circle-check' : 'fa-circle-xmark'}" style="color: ${type === 'add' ? '#10b981' : '#ef4444'}"></i>
-                    <div class="alert-details">
-                        <p>${type === 'add' ? 'New Tourist Tracked' : 'Tourist Offline'}</p>
-                        <span>ID: ${id.substring(0,8)}... • ${new Date().toLocaleTimeString()}</span>
-                    </div>
-                </div>`;
-            feed.insertAdjacentHTML('afterbegin', html);
-            if(feed.children.length > 8) feed.lastElementChild.remove();
-        }
-
-        onSnapshot(collection(db, "users"), (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-                const data = change.doc.data();
-                const id = change.doc.id;
-
-                if (change.type === "added" || change.type === "modified") {
-                    if (data.lat && data.lng) {
-                        touristData[id] = { lat: data.lat, lng: data.lng }; // Store for geofence check
-                        const isSOS = data.sos === true || String(data.sos).toLowerCase() === "true";
-                        
-                        if (touristMarkers[id]) {
-                            touristMarkers[id].setLngLat([data.lng, data.lat]);
-                            touristMarkers[id].getElement().style.backgroundColor = isSOS ? '#ef4444' : '#3b82f6';
-                        } else {
-                            const el = document.createElement('div');
-                            el.className = 'marker-pulse';
-                            el.style.backgroundColor = isSOS ? '#ef4444' : '#3b82f6';
-                            el.style.width = '15px'; el.style.height = '15px';
-                            el.style.borderRadius = '50%'; el.style.border = '2px solid white';
-                            
-                            touristMarkers[id] = new Radar.ui.Marker({ element: el })
-                                .setLngLat([data.lng, data.lat])
-                                .addTo(map);
-                            updateUI('add', id);
-                        }
-                        if(isSOS && change.type === "modified") {
-                            alertCounter++;
-                            document.getElementById("alert-count-display").innerText = alertCounter;
-                        }
-                    }
-                } else if (change.type === "removed") {
+            if (change.type === "added" || change.type === "modified") {
+                // FIX: Verify lat/lng are actual numbers to prevent the "found null" error
+                if (typeof data.lat === 'number' && typeof data.lng === 'number') {
+                    touristData[id] = { lat: data.lat, lng: data.lng };
+                    const isSOS = data.sos === true || String(data.sos).toLowerCase() === "true";
+                    
                     if (touristMarkers[id]) {
-                        touristMarkers[id].remove();
-                        delete touristMarkers[id];
-                        delete touristData[id];
-                        updateUI('remove', id);
+                        touristMarkers[id].setLngLat([data.lng, data.lat]);
+                        touristMarkers[id].getElement().style.backgroundColor = isSOS ? '#ef4444' : '#3b82f6';
+                    } else {
+                        const el = document.createElement('div');
+                        el.className = 'marker-pulse';
+                        el.style.backgroundColor = isSOS ? '#ef4444' : '#3b82f6';
+                        el.style.width = '15px'; el.style.height = '15px';
+                        el.style.borderRadius = '50%'; el.style.border = '2px solid white';
+                        
+                        // FIX: Use maplibregl.Marker directly (Radar's built-in alias)
+                        touristMarkers[id] = new maplibregl.Marker({ element: el })
+                            .setLngLat([data.lng, data.lat])
+                            .addTo(map);
+                    }
+
+                    if(isSOS && change.type === "modified") {
+                        alertCounter++;
+                        document.getElementById("alert-count-display").innerText = alertCounter;
                     }
                 }
-            });
-            document.getElementById("activetcount").innerText = Object.keys(touristMarkers).length;
+            } else if (change.type === "removed") {
+                if (touristMarkers[id]) {
+                    touristMarkers[id].remove();
+                    delete touristMarkers[id];
+                    delete touristData[id];
+                }
+            }
         });
+        document.getElementById("activetcount").innerText = Object.keys(touristMarkers).length;
+    });
 
-        setupGeofences();
-    </script>
+    setupGeofences();
+</script>
 </body>
 </html>
+
