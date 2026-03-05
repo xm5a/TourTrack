@@ -90,12 +90,12 @@
         /* --- ZONE LAYOUT --- */
         .zone-container {
             display: grid;
-            grid-template-columns: 1fr 400px;
+            grid-template-columns: 1fr 420px;
             flex-grow: 1;
             overflow: hidden;
         }
 
-        #map-overlay { width: 100%; height: 100%; background: #e2e8f0; }
+        #map-overlay { width: 100%; height: 100%; background: #cbd5e1; }
 
         .management-panel {
             background: white;
@@ -106,8 +106,8 @@
         }
 
         .panel-header { padding: 1.5rem; border-bottom: 1px solid var(--border-color); }
-        .panel-header h2 { font-size: 1.1rem; margin-bottom: 0.5rem; }
-        .panel-header p { font-size: 0.85rem; color: #6b7280; margin-bottom: 1.5rem; }
+        .panel-header h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.25rem; }
+        .panel-header p { font-size: 0.85rem; color: #6b7280; margin-bottom: 1.25rem; }
 
         .btn-primary {
             background: var(--accent-blue);
@@ -116,38 +116,49 @@
             cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
         }
 
-        .zone-list { flex-grow: 1; overflow-y: auto; list-style: none; }
+        .zone-list { flex-grow: 1; overflow-y: auto; list-style: none; background: #f8fafc; }
         .zone-item {
-            padding: 1.25rem; border-bottom: 1px solid var(--border-color);
-            display: flex; justify-content: space-between; align-items: center;
+            padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color);
+            background: #fff; display: flex; justify-content: space-between; align-items: center;
         }
-        .zone-item h3 { font-size: 0.95rem; margin-bottom: 4px; }
+        .zone-info h3 { font-size: 0.95rem; font-weight: 600; color: #111827; margin-bottom: 4px; }
         .zone-loc { font-size: 0.8rem; color: #6b7280; display: block; margin-bottom: 8px; }
 
         /* Badges */
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
-        .badge-prohibited { background: #fee2e2; color: #dc2626; }
-        .badge-high { background: #ffedd5; color: #ea580c; }
-        .badge-restricted { background: #fef9c3; color: #a16207; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 99px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; border: 1px solid transparent; }
+        .badge-prohibited { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
+        .badge-high { background: #ffedd5; color: #f97316; border-color: #fdba74; }
+        .badge-restricted { background: #fef9c3; color: #eab308; border-color: #fde047; }
 
         .del-btn {
-            background: #fff; border: 1px solid #fee2e2; color: #dc2626;
+            background: #fee2e2; border: none; color: #ef4444;
             width: 32px; height: 32px; border-radius: 6px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
         }
-        .del-btn:hover { background: #dc2626; color: white; }
+        .del-btn:hover { background: #ef4444; color: white; }
 
-        /* Modal */
+        /* Modal - Restored Original with Grid Inputs */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(17, 24, 39, 0.6); backdrop-filter: blur(4px);
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
             display: none; justify-content: center; align-items: center; z-index: 2000;
         }
-        .modal-panel { background: white; width: 450px; border-radius: 12px; padding: 2rem; }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+        .modal-panel { background: white; width: 500px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 1.5rem; }
+        
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #374151; }
         .form-group input, .form-group select {
-            width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;
+            width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; outline: none;
         }
+        .form-group input:focus { border-color: var(--accent-blue); }
+        
+        .help-text { font-size: 0.8rem; color: #6b7280; background: #f8fafc; padding: 10px; border-radius: 6px; border: 1px dashed #cbd5e1; }
+        .modal-footer { padding: 1.25rem; background: #f8fafc; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; }
+        
+        .empty-state { padding: 3rem 2rem; text-align: center; color: #94a3b8; }
     </style>
 </head>
 <body>
@@ -180,12 +191,15 @@
             
             <aside class="management-panel">
                 <div class="panel-header">
-                    <h2>Manage Safety Zones</h2>
-                    <p>Draw boundaries on the map to define geofenced risk areas.</p>
+                    <h1>Manage Zones</h1>
+                    <p>Create, edit, and manage geo-fenced safety boundaries.</p>
                     <button class="btn-primary" onclick="openModal()"><i class="fa-solid fa-plus"></i> Create New Zone</button>
                 </div>
                 <ul class="zone-list" id="zone-list">
-                    <li style="text-align:center; padding: 2rem; color: #6b7280;"><i class="fa-solid fa-spinner fa-spin"></i> Loading zones...</li>
+                    <div class="empty-state">
+                        <i class="fa-solid fa-spinner fa-spin" style="font-size:2rem; margin-bottom:10px;"></i>
+                        <p>Syncing zones from Radar...</p>
+                    </div>
                 </ul>
             </aside>
         </div>
@@ -193,26 +207,48 @@
 
     <div id="zone-modal" class="modal-overlay">
         <div class="modal-panel">
-            <h2 style="margin-bottom: 1.5rem;">Configure Zone</h2>
-            <div class="form-group">
-                <label>Zone Name</label>
-                <input type="text" id="zone-name" placeholder="e.g. Cliff Warning Area">
+            <div class="modal-header">
+                <h2>Create Zone</h2>
+                <i class="fa-solid fa-xmark" onclick="closeModal()" style="cursor:pointer; color:#94a3b8;"></i>
             </div>
-            <div class="form-group">
-                <label>District / Place</label>
-                <input type="text" id="zone-place" placeholder="e.g. Thane, Yeoor">
+            <div class="modal-body">
+                <form id="zone-form" onsubmit="return false;">
+                    <div class="form-group">
+                        <label for="zone-name">Zone Name / Description</label>
+                        <input type="text" id="zone-name" placeholder="e.g., Dangerous Cliff Area" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="zone-state">State</label>
+                            <input type="text" id="zone-state" placeholder="e.g., Maharashtra" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="zone-district">District</label>
+                            <input type="text" id="zone-district" placeholder="e.g., Thane" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="zone-place">City / Place</label>
+                            <input type="text" id="zone-place" placeholder="e.g., Yeoor Hills" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="zone-risk">Risk Level</label>
+                            <select id="zone-risk">
+                                <option value="high">High-Risk (Orange)</option>
+                                <option value="prohibited">Prohibited (Red)</option>
+                                <option value="restricted">Restricted (Yellow)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="help-text"><i class="fa-solid fa-info-circle"></i> After clicking "Save Config", use your mouse to draw the boundary on the map. Double-click to finish.</p>
+                </form>
             </div>
-            <div class="form-group">
-                <label>Risk Level</label>
-                <select id="zone-risk">
-                    <option value="restricted">Restricted (Yellow)</option>
-                    <option value="high">High Risk (Orange)</option>
-                    <option value="prohibited">Prohibited (Red)</option>
-                </select>
-            </div>
-            <div style="display:flex; gap:10px; margin-top:2rem;">
-                <button class="btn-primary" onclick="startDrawing()">Save & Start Drawing</button>
+            <div class="modal-footer">
                 <button onclick="closeModal()" style="background:none; border:none; cursor:pointer; color:#6b7280; font-weight:600;">Cancel</button>
+                <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="CreateGeofence()">Save Config</button>
             </div>
         </div>
     </div>
@@ -240,10 +276,9 @@
         });
         map.addControl(draw);
 
-        // --- FETCH FIX ---
-        async function loadZones() {
+        // --- FETCH FIX (Ensure Authorization header is standard) ---
+        async function loadExistingGeofences() {
             try {
-                // Fix: Ensure standard fetch with Authorization header works for Radar
                 const response = await fetch('https://api.radar.io/v1/geofences?tag=safety-zone&limit=100', {
                     headers: { 'Authorization': RADAR_SK }
                 });
@@ -254,11 +289,10 @@
                 list.innerHTML = '';
 
                 if(fences.length === 0) {
-                    list.innerHTML = '<li style="text-align:center; padding:2rem; color:#6b7280;">No zones created yet.</li>';
+                    list.innerHTML = '<div class="empty-state"><i class="fa-solid fa-map-location-dot" style="font-size:2rem; opacity:0.3;"></i><p>No zones found.</p></div>';
                 }
 
                 fences.forEach(f => {
-                    // Add to Map
                     if(f.geometry) {
                         draw.add({
                             id: f._id,
@@ -267,76 +301,76 @@
                             geometry: f.geometry
                         });
                     }
-                    // Add to List
-                    addToList(f.description, f.metadata?.riskLevel, f.metadata?.place, f._id, f.externalId);
+                    addZoneToUI(f.description, f.metadata?.riskLevel, `${f.metadata?.place}, ${f.metadata?.district}`, f.tag, f.externalId, f._id);
                 });
-            } catch (e) { console.error("Fetch error:", e); }
+            } catch (e) { console.error(e); }
         }
 
-        function addToList(name, risk, place, id, extId) {
+        function addZoneToUI(name, risk, loc, tag, extId, mapId) {
             const list = document.getElementById('zone-list');
             const li = document.createElement('li');
             li.className = 'zone-item';
             const badgeClass = `badge-${risk || 'restricted'}`;
             
             li.innerHTML = `
-                <div>
+                <div class="zone-info">
                     <h3>${name}</h3>
-                    <span class="zone-loc"><i class="fa-solid fa-location-dot"></i> ${place || 'Unknown'}</span>
-                    <span class="badge ${badgeClass}">${risk || 'restricted'}</span>
+                    <span class="zone-loc"><i class="fa-solid fa-location-dot"></i> ${loc}</span>
+                    <span class="badge ${badgeClass}">${risk === 'high' ? 'High-Risk' : risk}</span>
                 </div>
-                <button class="del-btn" onclick="deleteZone(this, '${extId}', '${id}')"><i class="fa-solid fa-trash"></i></button>
+                <button class="del-btn" onclick="removefence(this, '${tag}', '${extId}', '${mapId}')"><i class="fa-solid fa-trash"></i></button>
             `;
             list.appendChild(li);
         }
 
-        map.on('load', loadZones);
+        map.on('load', loadExistingGeofences);
 
-        // --- DRAW & SAVE LOGIC ---
+        // --- UI & MODAL HELPERS ---
         function openModal() { document.getElementById('zone-modal').style.display = 'flex'; }
         function closeModal() { document.getElementById('zone-modal').style.display = 'none'; }
 
-        function startDrawing() {
+        // --- CREATE GEOFENCE LOGIC (Capturing all metadata) ---
+        window.CreateGeofence = function() {
             const name = document.getElementById('zone-name').value;
-            if(!name) return alert("Enter a name");
+            const state = document.getElementById('zone-state').value;
+            const district = document.getElementById('zone-district').value;
+            const place = document.getElementById('zone-place').value;
+            if(!name || !state || !district || !place) return alert("Please fill all fields.");
+
             closeModal();
             draw.changeMode('draw_polygon');
-        }
 
-        map.on('draw.create', async (e) => {
-            const feature = e.features[0];
-            const name = document.getElementById('zone-name').value;
-            const place = document.getElementById('zone-place').value;
-            const risk = document.getElementById('zone-risk').value;
-            const extId = 'zone-' + Date.now();
+            map.once('draw.create', async (e) => {
+                const feature = e.features[0];
+                const risk = document.getElementById('zone-risk').value;
+                const extId = 'zone-' + Date.now();
+                const tag = 'safety-zone';
 
-            const body = {
-                description: name,
-                tag: 'safety-zone',
-                externalId: extId,
-                type: 'polygon',
-                coordinates: feature.geometry.coordinates[0],
-                metadata: { riskLevel: risk, place: place }
-            };
+                const body = {
+                    description: name,
+                    type: 'polygon',
+                    coordinates: feature.geometry.coordinates[0],
+                    metadata: { riskLevel: risk, state: state, district: district, place: place }
+                };
 
-            const res = await fetch(`https://api.radar.io/v1/geofences/safety-zone/${extId}`, {
-                method: 'PUT',
-                headers: { 'Authorization': RADAR_SK, 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
+                const res = await fetch(`https://api.radar.io/v1/geofences/${tag}/${extId}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': RADAR_SK, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if(res.ok) {
+                    addZoneToUI(name, risk, `${place}, ${district}`, tag, extId, feature.id);
+                } else {
+                    alert("Failed to save geofence.");
+                    draw.delete(feature.id);
+                }
             });
+        };
 
-            if(res.ok) {
-                const data = await res.json();
-                addToList(name, risk, place, data.geofence._id, extId);
-            } else {
-                alert("Failed to save geofence to Radar.");
-                draw.delete(feature.id);
-            }
-        });
-
-        window.deleteZone = async (btn, extId, mapId) => {
+        window.removefence = async (btn, tag, extId, mapId) => {
             if(!confirm("Delete this zone?")) return;
-            const res = await fetch(`https://api.radar.io/v1/geofences/safety-zone/${extId}`, {
+            const res = await fetch(`https://api.radar.io/v1/geofences/${tag}/${extId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': RADAR_SK }
             });
