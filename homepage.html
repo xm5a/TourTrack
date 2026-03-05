@@ -23,7 +23,6 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* Firefox-Perfect Grid Layout */
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-body);
@@ -68,7 +67,6 @@
             box-shadow: inset 4px 0 0 var(--accent-blue);
         }
 
-        /* --- MAIN CONTENT --- */
         .main-content {
             grid-column: 2;
             display: flex;
@@ -86,12 +84,6 @@
             position: sticky; top: 0; z-index: 900;
         }
 
-        .header input {
-            border: 1px solid var(--border-color);
-            padding: 10px 16px; border-radius: 8px; width: 320px; outline: none;
-        }
-
-        /* --- DASHBOARD GRID --- */
         .dashboard-container {
             padding: 2rem;
             display: grid;
@@ -127,7 +119,6 @@
         .stat-card h3 { font-size: 1.75rem; font-weight: 700; color: #111827; }
         .stat-card p { font-size: 0.85rem; color: #6b7280; font-weight: 500; }
 
-        /* Panels */
         .panel {
             background: white; border: 1px solid var(--border-color);
             border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;
@@ -136,21 +127,16 @@
 
         .panel-header {
             padding: 1.25rem 1.5rem; font-weight: 700; border-bottom: 1px solid var(--border-color);
-            display: flex; justify-content: space-between; align-items: center;
         }
 
         #map-container { width: 100%; height: 500px; background: #e2e8f0; }
 
-        /* Alerts Feed */
         .alerts-feed { flex-grow: 1; overflow-y: auto; max-height: 500px; }
         .alert-item {
             padding: 1.25rem; border-bottom: 1px solid var(--border-color);
             display: flex; align-items: flex-start; gap: 12px;
-            animation: slideIn 0.3s ease-out;
         }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
 
-        .alert-item i { font-size: 1rem; margin-top: 3px; }
         .alert-details p { font-size: 0.9rem; font-weight: 600; color: #111827; }
         .alert-details span { font-size: 0.75rem; color: #6b7280; }
 
@@ -203,8 +189,8 @@
                 <div class="stat-card">
                     <div class="icon zones"><i class="fa-solid fa-draw-polygon"></i></div>
                     <div>
-                        <h3 id="HRisk">3</h3>
-                        <p>High-Risk Zones</p>
+                        <h3 id="HRisk">0</h3>
+                        <p>Safety Zones</p>
                     </div>
                 </div>
             </div>
@@ -240,10 +226,27 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const RADAR_SK = 'prj_live_sk_2f8e1e138dd5fcf9dbb5c3537ffb75b93c083021';
+        
         const touristMarkers = {};
         let alertCounter = 0;
 
-        // MapLibre init
+        // --- RADAR ZONE SYNC ---
+        // This function fetches the total count of safety zones from Radar
+        async function updateZoneCount() {
+            try {
+                const response = await fetch('https://api.radar.io/v1/geofences?tag=safety-zone&limit=100', {
+                    headers: { 'Authorization': RADAR_SK }
+                });
+                const data = await response.json();
+                const count = data.geofences ? data.geofences.length : 0;
+                document.getElementById('HRisk').innerText = count;
+            } catch (e) {
+                console.error("Radar Sync Error:", e);
+            }
+        }
+
+        // --- MAP INIT ---
         const map = new maplibregl.Map({
             container: 'map-container',
             style: {
@@ -261,7 +264,7 @@
             zoom: 13
         });
 
-        function updateUI(type, id, status) {
+        function updateUI(type, id) {
             const feed = document.getElementById('alerts-feed');
             if(feed.querySelector('div[style*="text-align:center"]')) feed.innerHTML = '';
 
@@ -283,6 +286,7 @@
             if(feed.children.length > 8) feed.lastElementChild.remove();
         }
 
+        // --- FIREBASE SYNC ---
         onSnapshot(collection(db, "users"), (snapshot) => {
             snapshot.docChanges().forEach((change) => {
                 const data = change.doc.data();
@@ -290,9 +294,8 @@
 
                 if (change.type === "added" || change.type === "modified") {
                     if (data.lat && data.lng) {
-                        const isSOS = data.sos === true;
+                        const isSOS = data.sos === true || String(data.sos).toLowerCase() === "true";
                         
-                        // Marker logic
                         if (touristMarkers[id]) {
                             touristMarkers[id].setLngLat([data.lng, data.lat]);
                             touristMarkers[id].getElement().style.backgroundColor = isSOS ? '#ef4444' : '#3b82f6';
@@ -300,6 +303,8 @@
                             const el = document.createElement('div');
                             el.className = 'marker-pulse';
                             el.style.backgroundColor = isSOS ? '#ef4444' : '#3b82f6';
+                            el.style.width = '15px'; el.style.height = '15px';
+                            el.style.borderRadius = '50%'; el.style.border = '2px solid white';
                             
                             const marker = new maplibregl.Marker({ element: el })
                                 .setLngLat([data.lng, data.lat])
@@ -307,10 +312,9 @@
                             
                             touristMarkers[id] = marker;
                             updateUI('add', id);
-                            map.flyTo({ center: [data.lng, data.lat], speed: 0.8 });
                         }
 
-                        if(isSOS) {
+                        if(isSOS && change.type === "modified") {
                             alertCounter++;
                             document.getElementById("alert-count-display").innerText = alertCounter;
                         }
@@ -325,7 +329,12 @@
             });
             document.getElementById("activetcount").innerText = Object.keys(touristMarkers).length;
         });
+
+        // Initialize counts
+        updateZoneCount();
+        // Optional: Poll Radar every 30 seconds for zone updates
+        setInterval(updateZoneCount, 30000);
+
     </script>
 </body>
 </html>
-
