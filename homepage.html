@@ -89,6 +89,7 @@
         .header input {
             border: 1px solid var(--border-color);
             padding: 10px 16px; border-radius: 8px; width: 320px; outline: none;
+            font-family: 'Inter', sans-serif;
         }
 
         /* --- DASHBOARD GRID --- */
@@ -141,7 +142,7 @@
 
         #map-container { width: 100%; height: 500px; background: #e2e8f0; }
 
-        /* Alerts Feed */
+        /* Activity Feed */
         .alerts-feed { flex-grow: 1; overflow-y: auto; max-height: 500px; }
         .alert-item {
             padding: 1.25rem; border-bottom: 1px solid var(--border-color);
@@ -157,6 +158,7 @@
         .marker-pulse {
             width: 15px; height: 15px; border-radius: 50%;
             border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
         }
     </style>
 </head>
@@ -178,7 +180,7 @@
 
     <main class="main-content">
         <header class="header">
-            <input type="text" placeholder="Quick Search Tourist ID...">
+            <input type="text" id="dashboard-search" placeholder="Quick Search Tourist ID..." onkeyup="searchTourist()">
             <div style="display:flex; align-items:center; gap:15px;">
                 <span>Welcome, <strong>Admin</strong></span>
                 <i class="fa-solid fa-circle-user" style="font-size: 1.6rem; color: #4b5563;"></i>
@@ -244,7 +246,6 @@
         const touristMarkers = {};
         let alertCounter = 0;
 
-        // MapLibre init
         const map = new maplibregl.Map({
             container: 'map-container',
             style: {
@@ -262,7 +263,25 @@
             zoom: 13
         });
 
-        function updateUI(type, id, status) {
+        // --- SEARCH LOGIC ---
+        window.searchTourist = function() {
+            const val = document.getElementById('dashboard-search').value.toLowerCase();
+            
+            Object.keys(touristMarkers).forEach(id => {
+                const markerElement = touristMarkers[id].getElement();
+                if (id.toLowerCase().includes(val)) {
+                    markerElement.style.display = "block";
+                    // If string is long enough and matches, zoom in
+                    if (val.length > 4 && id.toLowerCase().includes(val)) {
+                        map.flyTo({ center: touristMarkers[id].getLngLat(), zoom: 15 });
+                    }
+                } else {
+                    markerElement.style.display = "none";
+                }
+            });
+        };
+
+        function updateActivityLog(type, id) {
             const feed = document.getElementById('alerts-feed');
             if(feed.querySelector('div[style*="text-align:center"]')) feed.innerHTML = '';
 
@@ -281,7 +300,7 @@
                 </div>`;
             
             feed.insertAdjacentHTML('afterbegin', html);
-            if(feed.children.length > 8) feed.lastElementChild.remove();
+            if(feed.children.length > 10) feed.lastElementChild.remove();
         }
 
         onSnapshot(collection(db, "users"), (snapshot) => {
@@ -291,9 +310,8 @@
 
                 if (change.type === "added" || change.type === "modified") {
                     if (data.lat && data.lng) {
-                        const isSOS = data.sos === true;
+                        const isSOS = data.sos === true || String(data.sos).toLowerCase() === "true";
                         
-                        // Marker logic
                         if (touristMarkers[id]) {
                             touristMarkers[id].setLngLat([data.lng, data.lat]);
                             touristMarkers[id].getElement().style.backgroundColor = isSOS ? '#ef4444' : '#3b82f6';
@@ -301,17 +319,22 @@
                             const el = document.createElement('div');
                             el.className = 'marker-pulse';
                             el.style.backgroundColor = isSOS ? '#ef4444' : '#3b82f6';
+                            el.style.width = '15px';
+                            el.style.height = '15px';
+                            el.style.borderRadius = '50%';
+                            el.style.border = '2px solid white';
+                            el.style.cursor = 'pointer';
                             
                             const marker = new maplibregl.Marker({ element: el })
                                 .setLngLat([data.lng, data.lat])
+                                .setPopup(new maplibregl.Popup().setHTML(`<b>ID:</b> ${id}<br><b>User:</b> ${data.fullName || 'Unknown'}`))
                                 .addTo(map);
                             
                             touristMarkers[id] = marker;
-                            updateUI('add', id);
-                            map.flyTo({ center: [data.lng, data.lat], speed: 0.8 });
+                            updateActivityLog('add', id);
                         }
 
-                        if(isSOS) {
+                        if(isSOS && change.type === "modified") {
                             alertCounter++;
                             document.getElementById("alert-count-display").innerText = alertCounter;
                         }
@@ -320,7 +343,7 @@
                     if (touristMarkers[id]) {
                         touristMarkers[id].remove();
                         delete touristMarkers[id];
-                        updateUI('remove', id);
+                        updateActivityLog('remove', id);
                     }
                 }
             });
