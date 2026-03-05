@@ -233,7 +233,7 @@
                 </div>
             `;
             feed.insertAdjacentHTML('afterbegin', html);
-            updateAlertCount(true); // Increment stat card
+             // Increment stat card
             
             // Limit feed to 10 items
             if(feed.children.length > 10) feed.lastElementChild.remove();
@@ -295,6 +295,9 @@
                 if (change.type === "added" || change.type === "modified") {
                     if (data.lat && data.lng) {
                         updateMapMarker(id, data.lat, data.lng, 'Active');
+                        if(data.sos === true){
+            updateAlertCount(true);
+                        }
                     }
                 } else if (change.type === "removed") {
                     removeMapMarker(id);
@@ -305,5 +308,6 @@
     </script>
 </body>
 </html>
+
 
 
