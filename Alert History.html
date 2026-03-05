@@ -196,7 +196,8 @@
             where, 
             getDocs, 
             addDoc, 
-            serverTimestamp 
+            serverTimestamp,
+            deleteDoc
         } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -228,6 +229,9 @@
                     // IF SOS IS TRUE -> Trigger the Logic
                     if (userData.sos === true) {
                         await createAlertIfNeeded(userId, userData);
+                    }
+                    else if(userData.sos === false){
+                        await deleteAlert(userId,userData);
                     }
                 }
             });
@@ -272,6 +276,23 @@
                 // console.log("Active alert already exists for this user. Skipping.");
             }
         }
+
+    async function deleteAlert(userId,userData){
+        const alertsRef = collection(db, "alerts");
+          const q = query(
+                alertsRef, 
+                where("userId", "==", userId), 
+                where("status", "==", "Active")
+            );
+        const existingAlerts = await getDocs(q);
+        if(!existingAlerts.empty){
+            console.log("Deleting User Docs from Alert");
+
+            try{
+                await deleteDoc(existingAlerts);
+            }
+        }
+    }
 
 
         // ======================================================
@@ -334,4 +355,5 @@
     </script>
 </body>
 </html>
+
 
