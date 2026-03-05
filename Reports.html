@@ -3,6 +3,389 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports & Analytics - Safety Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --sidebar-bg: #111827;
+            --sidebar-hover: #1f2937;
+            --accent-blue: #3b82f6;
+            --bg-body: #f3f4f6;
+            --glass-white: rgba(255, 255, 255, 0.98);
+            --border-color: #e5e7eb;
+            --sidebar-width: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Firefox-Perfect Grid Layout */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            display: grid;
+            grid-template-columns: var(--sidebar-width) 1fr;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- SHARED SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 2.5rem 1.5rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-nav { list-style: none; margin-top: 0.5rem; }
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 14px 24px;
+            color: #9ca3af;
+            text-decoration: none;
+            margin: 4px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        .sidebar-nav a:hover, .sidebar-nav a.active {
+            color: #fff;
+            background-color: var(--sidebar-hover);
+        }
+
+        .sidebar-nav a.active {
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(31, 41, 55, 1) 100%);
+            box-shadow: inset 4px 0 0 var(--accent-blue);
+        }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            grid-column: 2;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .header {
+            background: var(--glass-white);
+            backdrop-filter: blur(12px);
+            padding: 1.2rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .content-container {
+            padding: 2.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* --- STAT CARDS --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);
+        }
+
+        .stat-card h3 { font-size: 0.85rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+        .stat-card .value { font-size: 2rem; font-weight: 700; color: #111827; }
+
+        /* --- CHARTS --- */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            height: 400px;
+        }
+
+        .chart-card h3 { font-size: 1rem; margin-bottom: 1.5rem; font-weight: 600; }
+
+        /* --- TABLE --- */
+        .card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+
+        .table-header { padding: 1.5rem; font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid var(--border-color); }
+        
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th {
+            background-color: #f9fafb;
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #6b7280;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .btn-print {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-print:hover { background: #f9fafb; }
+
+        @media (max-width: 1100px) { .charts-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <i class="fa-solid fa-shield-halved" style="color: var(--accent-blue);"></i>
+            <span>Safety Hub</span>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="homepage.html"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+            <li><a href="Alert History.html"><i class="fa-solid fa-bullhorn"></i> Alert History</a></li>
+            <li><a href="TouristID.html"><i class="fa-solid fa-id-card"></i> Tourist IDs</a></li>
+            <li><a href="ZoneManagement.html"><i class="fa-solid fa-map-location-dot"></i> Zone Management</a></li>
+            <li><a href="Reports.html" class="active"><i class="fa-solid fa-chart-line"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <h1>Reports & Analytics</h1>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <button class="btn-print" onclick="window.print()">
+                    <i class="fa-solid fa-print"></i> Print Report
+                </button>
+                <div style="width:1px; height:24px; background:#e5e7eb;"></div>
+                <span>Welcome, <strong>Admin</strong></span>
+                <i class="fa-solid fa-circle-user" style="font-size: 1.6rem; color: #4b5563;"></i>
+            </div>
+        </header>
+        
+        <div class="content-container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Tourists (Live)</h3>
+                    <p class="value" id="total-tourists">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Active Alerts (SOS)</h3>
+                    <p class="value" id="total-alerts" style="color: #dc2626">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>System Health</h3>
+                    <p class="value" style="color: #16a34a">98%</p>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Live Tourist Traffic</h3>
+                    <div style="height: 300px;"><canvas id="liveTrafficChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h3>Status Breakdown</h3>
+                    <div style="height: 280px; display:flex; justify-content:center;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="table-header">Registered Tourist Database</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tourist ID</th>
+                            <th>Name</th>
+                            <th>Coordinates</th>
+                            <th>Current Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-table-body">
+                        <tr><td colspan="4" style="text-align:center; padding:3rem; color:#6b7280;">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Initializing data stream...
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
+            authDomain: "tour-track-ddb18.firebaseapp.com",
+            projectId: "tour-track-ddb18",
+            storageBucket: "tour-track-ddb18.firebasestorage.app",
+            messagingSenderId: "426865781508",
+            appId: "1:426865781508:web:8fb7a409f00c536955be51"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let statusChartInstance = null;
+        let trafficChartInstance = null;
+
+        function initCharts() {
+            const ctxVol = document.getElementById('liveTrafficChart').getContext('2d');
+            trafficChartInstance = new Chart(ctxVol, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Active Users',
+                        data: [],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 0
+                    }]
+                },
+                options: { 
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, grid: { color: '#f3f4f6' } }, x: { grid: { display: false } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            const ctxStat = document.getElementById('statusChart').getContext('2d');
+            statusChartInstance = new Chart(ctxStat, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Safe', 'SOS'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: { 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        function startLiveUpdates() {
+            onSnapshot(collection(db, "users"), (snapshot) => {
+                let sosCount = 0;
+                let safeCount = 0;
+                let tableRows = '';
+                
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const isSOS = data.sos === true || String(data.sos).toLowerCase() === "true";
+                    isSOS ? sosCount++ : safeCount++;
+
+                    tableRows += `
+                        <tr>
+                            <td style="font-family:monospace; color:#3b82f6;">${doc.id.substring(0,8)}</td>
+                            <td><strong>${data.fullName || "User"}</strong></td>
+                            <td style="color:#6b7280">${(data.lat || 0).toFixed(4)}, ${(data.lng || 0).toFixed(4)}</td>
+                            <td>
+                                <span class="badge" style="background:${isSOS ? '#fee2e2' : '#dcfce7'}; color:${isSOS ? '#dc2626' : '#059669'};">
+                                    ${isSOS ? 'SOS ALERT' : 'ACTIVE'}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('total-tourists').innerText = snapshot.size;
+                document.getElementById('total-alerts').innerText = sosCount;
+                document.getElementById('report-table-body').innerHTML = tableRows;
+
+                if (statusChartInstance) {
+                    statusChartInstance.data.datasets[0].data = [safeCount, sosCount];
+                    statusChartInstance.update();
+                }
+
+                if (trafficChartInstance) {
+                    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    trafficChartInstance.data.labels.push(now);
+                    trafficChartInstance.data.datasets[0].data.push(snapshot.size);
+                    if (trafficChartInstance.data.labels.length > 15) {
+                        trafficChartInstance.data.labels.shift();
+                        trafficChartInstance.data.datasets[0].data.shift();
+                    }
+                    trafficChartInstance.update();
+                }
+            });
+        }
+
+        initCharts();
+        startLiveUpdates();
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports - Command Center</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -322,3 +705,4 @@
     </script>
 </body>
 </html>
+
