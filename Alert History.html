@@ -9,6 +9,218 @@
 
     <style>
         :root {
+            --sidebar-bg: #111827;
+            --sidebar-hover: #1f2937;
+            --accent-blue: #3b82f6;
+            --bg-body: #f9fafb;
+            --glass-white: rgba(255, 255, 255, 0.95);
+            --border-color: #e5e7eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            display: flex; /* Sidebar and Content side-by-side */
+            min-height: 100vh;
+        }
+
+        /* --- SHARED SIDEBAR EFFECT --- */
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-nav { list-style: none; margin-top: 1rem; }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            color: #9ca3af;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            margin: 4px 12px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        /* The "Blue Glow" Active State from your screenshot */
+        .sidebar-nav a:hover, .sidebar-nav a.active {
+            background-color: var(--sidebar-hover);
+            color: #fff;
+        }
+
+        .sidebar-nav a.active {
+            box-shadow: inset 4px 0 0 var(--accent-blue);
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(31, 41, 55, 1) 100%);
+        }
+
+        .sidebar-nav i { width: 25px; font-size: 1.1rem; }
+
+        /* --- MAIN CONTENT LAYOUT --- */
+        .main-content {
+            margin-left: 260px; /* Offset for the fixed sidebar */
+            flex-grow: 1;
+            width: calc(100% - 260px);
+        }
+
+        .header {
+            background: var(--glass-white);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        /* Fixes the "squashed" look: Add a container with a max-width */
+        .content-container {
+            padding: 2rem;
+            max-width: 1400px; /* Prevents the table from stretching to infinity */
+            margin: 0 auto;   /* Centers the content */
+        }
+
+        /* --- CARD & TABLE --- */
+        .card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .history-table th {
+            background-color: #f9fafb;
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #6b7280;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .history-table td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        .badge-sos {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .track-btn {
+            background: var(--accent-blue);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .track-btn:hover { background: #2563eb; }
+
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <i class="fa-solid fa-shield-halved" style="color: var(--accent-blue);"></i>
+            <span>Safety Hub</span>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="homepage.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
+            <li><a href="#" class="active"><i class="fa-solid fa-clock-rotate-left"></i> Alert History</a></li>
+            <li><a href="TouristID.html"><i class="fa-solid fa-id-card"></i> Tourist IDs</a></li>
+            <li><a href="ZoneManagement.html"><i class="fa-solid fa-map-location-dot"></i> Zone Management</a></li>
+            <li><a href="Reports.html"><i class="fa-solid fa-chart-pie"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <h1>Alert History</h1>
+            <div class="user-profile">
+                <span>Welcome, <strong>Admin</strong></span>
+                <i class="fa-solid fa-circle-user" style="font-size: 1.5rem; margin-left: 10px; color: #4b5563;"></i>
+            </div>
+        </header>
+        
+        <div class="content-container">
+            <div class="card">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Alert Type</th>
+                            <th>User Name</th>
+                            <th>Contact</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td>05 Mar, 07:32 pm</td>
+                            <td><span class="badge-sos"><i class="fa-solid fa-bell"></i> SOS - EMERGENCY</span></td>
+                            <td><strong>PAPPU</strong></td>
+                            <td>1234567890</td>
+                            <td style="color: #dc2626; font-weight: 700;">Active</td>
+                            <td><a href="#" class="track-btn"><i class="fa-solid fa-crosshairs"></i> Locate</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alert History - Safety Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
             --bg-color: #f9fafb;
             --sidebar-bg: #111827; /* Deep Navy from screenshot */
             --sidebar-hover: #1f2937;
@@ -1581,6 +1793,7 @@
     </script>
 </body>
 </html>
+
 
 
 
