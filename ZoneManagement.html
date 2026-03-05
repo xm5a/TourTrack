@@ -291,7 +291,7 @@
                                 description: name,
                                 type: 'polygon',
                                 coordinates: feature.geometry.coordinates[0], // Mapbox Draw format matches Radar
-                                metadata: { riskLevel: risk }
+                                metadata: { riskLevel: risk, state: "Thane", district: "Thane", place: name}
                             })
                         });
 
@@ -349,6 +349,7 @@
     </script>
 </body>
 </html>
+
 
 
 
