@@ -3,316 +3,376 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tourist IDs - Command Center</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>Tourist IDs - Safety Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --bg-color: #f4f7fa;
-            --sidebar-bg: #1f2937;
-            --sidebar-text: #d1d5db;
-            --sidebar-hover: #374151;
-            --header-bg: #ffffff;
-            --card-bg: #ffffff;
+            --sidebar-bg: #111827;
+            --sidebar-hover: #1f2937;
+            --accent-blue: #3b82f6;
+            --bg-body: #f3f4f6;
+            --glass-white: rgba(255, 255, 255, 0.98);
             --border-color: #e5e7eb;
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --accent-color: #2563eb;
+            --sidebar-width: 260px;
             --safety-high: #16a34a; --safety-high-bg: #f0fdf4;
-            --safety-medium: #ca8a04; --safety-medium-bg: #fefce8;
             --safety-low: #dc2626; --safety-low-bg: #fef2f2;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Roboto', sans-serif; background-color: var(--bg-color); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
-        
-        /* Layout */
-        .page-wrapper { display: flex; width: 100%; height: 100%; }
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
-        
-        /* Sidebar */
-        .sidebar { width: 250px; background-color: var(--sidebar-bg); color: var(--sidebar-text); padding: 1.5rem 0; display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar-header { text-align: center; padding: 1.5rem; border-bottom: 1px solid var(--sidebar-hover); }
-        .sidebar-header h2 { font-size: 1.5rem; color: #fff; }
-        .sidebar-nav { flex-grow: 1; list-style: none; margin-top: 1rem; }
-        .sidebar-nav a { display: flex; align-items: center; padding: 1rem 1.5rem; color: var(--sidebar-text); text-decoration: none; font-weight: 500; transition: 0.2s; }
-        .sidebar-nav a:hover, .sidebar-nav a.active { background-color: var(--sidebar-hover); color: #fff; }
-        .sidebar-nav a i { width: 25px; margin-right: 1rem; text-align: center; }
-        
-        /* Header */
-        .header { background-color: var(--header-bg); border-bottom: 1px solid var(--border-color); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-        .user-profile { display: flex; align-items: center; gap: 10px; }
 
-        /* Content */
-        .content-container { padding: 2rem; }
-        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        .page-header h1 { font-size: 1.75rem; }
-        .search-bar { display: flex; align-items: center; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem 1rem; background-color: #fff; }
-        .search-bar input { border: none; outline: none; margin-left: 0.5rem; font-size: 1rem; width: 250px; }
-        .btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
-        .btn-primary { background-color: var(--accent-color); color: #fff; }
-        .btn-primary:hover { background-color: #1d4ed8; }
+        /* Firefox-Perfect Grid Layout */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            display: grid;
+            grid-template-columns: var(--sidebar-width) 1fr;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
-        /* Table */
-        .tourist-table { width: 100%; border-collapse: collapse; background-color: #fff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; }
-        .tourist-table th, .tourist-table td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border-color); }
-        .tourist-table thead { background-color: #f9fafb; }
-        .tourist-table th { font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
-        .tourist-table tbody tr:hover { background-color: #f9fafb; }
-        
-        /* Badges */
-        .badge { padding: 0.25rem 0.75rem; border-radius: 1rem; font-weight: 600; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.3rem; }
-        .badge-active { background-color: var(--safety-high-bg); color: var(--safety-high); }
-        .badge-sos { background-color: var(--safety-low-bg); color: var(--safety-low); }
-        .badge-unknown { background-color: #f3f4f6; color: #6b7280; }
+        /* --- SHARED SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
 
-        .action-buttons { display: flex; gap: 0.5rem; }
-        .action-btn { background: none; border: none; cursor: pointer; color: var(--text-secondary); font-size: 1.1rem; padding: 0.5rem; border-radius: 50%; transition: 0.2s; }
-        .action-btn:hover { background-color: #e5e7eb; color: var(--text-primary); }
-        .btn-delete:hover { color: #ef4444; background-color: #fee2e2; }
+        .sidebar-header {
+            padding: 2.5rem 1.5rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-        /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-panel { background-color: #fff; border-radius: 16px; width: 90%; max-width: 600px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .modal-body { padding: 2rem; }
-        .detail-row { margin-bottom: 1rem; display: flex; justify-content: space-between; border-bottom: 1px dashed #e5e7eb; padding-bottom: 0.5rem; }
-        .detail-label { font-weight: 600; color: var(--text-secondary); }
+        .sidebar-nav { list-style: none; margin-top: 0.5rem; }
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 14px 24px;
+            color: #9ca3af;
+            text-decoration: none;
+            margin: 4px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        .sidebar-nav a:hover, .sidebar-nav a.active {
+            color: #fff;
+            background-color: var(--sidebar-hover);
+        }
+
+        .sidebar-nav a.active {
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(31, 41, 55, 1) 100%);
+            box-shadow: inset 4px 0 0 var(--accent-blue);
+        }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            grid-column: 2;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .header {
+            background: var(--glass-white);
+            backdrop-filter: blur(12px);
+            padding: 1.2rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .content-container {
+            padding: 2.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 16px;
+            width: 350px;
+        }
+
+        .search-bar input {
+            border: none;
+            outline: none;
+            margin-left: 10px;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        /* --- TABLE CARD --- */
+        .card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+
+        .tourist-table { width: 100%; border-collapse: collapse; }
+        .tourist-table th {
+            background-color: #f9fafb;
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #6b7280;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tourist-table td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            color: #374151;
+        }
+
+        /* --- BADGES & ACTIONS --- */
+        .badge {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .badge-active { background: var(--safety-high-bg); color: var(--safety-high); }
+        .badge-sos { background: var(--safety-low-bg); color: var(--safety-low); }
+
+        .action-buttons { display: flex; gap: 8px; }
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: white;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #4b5563;
+        }
+        .action-btn:hover { background: #f3f4f6; color: var(--accent-blue); }
+        .btn-delete:hover { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center; align-items: center;
+            z-index: 2000;
+        }
+        .modal-panel {
+            background: white;
+            border-radius: 16px;
+            width: 450px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .modal-header {
+            padding: 1.5rem;
+            background: #f9fafb;
+            border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-body { padding: 1.5rem; }
+        .detail-row {
+            display: flex; justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .detail-label { font-weight: 600; color: #6b7280; }
+        .close-modal {
+            background: var(--accent-blue);
+            color: white; border: none; padding: 10px; width: 100%;
+            border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: 600;
+        }
     </style>
 </head>
 <body>
-    <div class="page-wrapper">
-        <nav class="sidebar">
-            <div class="sidebar-header">
-                <h2><i class="fa-solid fa-shield-halved"></i> Safety Hub</h2>
-            </div>
-            <ul class="sidebar-nav">
-                <li><a href="homepage.html"><i class="fa-solid fa-table-columns"></i> Dashboard</a></li>
-                <li><a href="Alert%20History.html"><i class="fa-solid fa-bullhorn"></i> Alert History</a></li>
-                <li><a href="TouristID.html" class="active"><i class="fa-solid fa-users"></i> Tourist IDs</a></li>
-                <li><a href="ZoneManagement.html"><i class="fa-solid fa-map-marked-alt"></i> Zone Management</a></li>
-                <li><a href="Reports.html"><i class="fa-solid fa-chart-line"></i> Reports</a></li>
-            </ul>
-        </nav>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <i class="fa-solid fa-shield-halved" style="color: var(--accent-blue);"></i>
+            <span>Safety Hub</span>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="homepage.html"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+            <li><a href="Alert History.html"><i class="fa-solid fa-bullhorn"></i> Alert History</a></li>
+            <li><a href="TouristID.html" class="active"><i class="fa-solid fa-id-card"></i> Tourist IDs</a></li>
+            <li><a href="ZoneManagement.html"><i class="fa-solid fa-map-location-dot"></i> Zone Management</a></li>
+            <li><a href="Reports.html"><i class="fa-solid fa-chart-line"></i> Reports</a></li>
+        </ul>
+    </nav>
 
-        <main class="main-content">
-            <header class="header">
-                 <div class="page-title">
-                    <h1>Tourist Management</h1>
-                 </div>
-                <div class="user-profile">
-                    <span>Welcome, Admin</span>
-                    <i class="fa-solid fa-user-circle"></i>
+    <main class="main-content">
+        <header class="header">
+            <h1>Tourist Management</h1>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <span>Welcome, <strong>Admin</strong></span>
+                <i class="fa-solid fa-circle-user" style="font-size: 1.6rem; color: #4b5563;"></i>
+            </div>
+        </header>
+        
+        <div class="content-container">
+            <div class="page-header">
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass" style="color:#9ca3af;"></i>
+                    <input type="text" id="search-input" placeholder="Search by ID or Name..." onkeyup="filterTable()">
                 </div>
-            </header>
-            
-            <div class="content-container">
-                <div class="page-header">
-                    <div class="search-bar">
-                        <i class="fa-solid fa-search text-gray-400"></i>
-                        <input type="text" id="search-input" placeholder="Search by ID..." onkeyup="filterTable()">
-                    </div>
-                    <!--<div class="page-actions">
-                         <button class="btn btn-primary" onclick="alert('This feature would open a registration form.')"><i class="fa-solid fa-plus"></i> Register New Tourist</button>
-                    </div>-->
-                </div>
-                
+            </div>
+
+            <div class="card">
                 <table class="tourist-table">
                     <thead>
                         <tr>
-                            <th>Tourist ID</th>
+                            <th>ID</th>
                             <th>Name</th>
                             <th>Coordinates</th>
                             <th>Status</th>
-                            <th>Last Update</th>
+                            <th>Last Seen</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="table-body">
-                        <tr><td colspan="6" style="text-align:center; padding: 2rem;">Connecting to Database...</td></tr>
+                        <tr><td colspan="6" style="text-align:center; padding:3rem; color:#6b7280;">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Accessing database...
+                        </td></tr>
                     </tbody>
                 </table>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
     <div id="details-modal" class="modal-overlay">
         <div class="modal-panel">
             <div class="modal-header">
-                <h2>Tourist Details</h2>
-                <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+                <h2 style="font-size:1.1rem;">Tourist Profile</h2>
+                <i class="fa-solid fa-xmark" onclick="closeModal()" style="cursor:pointer; color:#9ca3af;"></i>
             </div>
-            <div class="modal-body" id="modal-content">
-                </div>
+            <div class="modal-body" id="modal-content"></div>
         </div>
     </div>
-    
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         const firebaseConfig = {
-
-  apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
-
-  authDomain: "tour-track-ddb18.firebaseapp.com",
-
-  projectId: "tour-track-ddb18",
-
-  storageBucket: "tour-track-ddb18.firebasestorage.app",
-
-  messagingSenderId: "426865781508",
-
-  appId: "1:426865781508:web:8fb7a409f00c536955be51",
-
-  measurementId: "G-TQZT1H6PPS"
-
-};
-
-
+            apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
+            authDomain: "tour-track-ddb18.firebaseapp.com",
+            projectId: "tour-track-ddb18",
+            storageBucket: "tour-track-ddb18.firebasestorage.app",
+            messagingSenderId: "426865781508",
+            appId: "1:426865781508:web:8fb7a409f00c536955be51"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const TOURIST_COLLECTION = "users";
         const tableBody = document.getElementById("table-body");
 
-        // --- 1. REAL-TIME LISTENER ---
-        onSnapshot(collection(db, TOURIST_COLLECTION), (snapshot) => {
+        // Real-time Data Sync
+        onSnapshot(collection(db, "users"), (snapshot) => {
             if (snapshot.empty) {
-                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No tourists found in database.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem;">No tourist data available.</td></tr>';
                 return;
             }
 
-            // Clear loading message on first load
-            if(document.querySelector('td[colspan="6"]')) tableBody.innerHTML = '';
+            tableBody.innerHTML = '';
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const id = doc.id;
+                const tr = document.createElement("tr");
+                tr.id = `row-${id}`;
+                
+                const isSOS = data.sos === true || String(data.sos).toLowerCase() === "true";
+                const badgeClass = isSOS ? "badge-sos" : "badge-active";
+                const statusIcon = isSOS ? "fa-triangle-exclamation" : "fa-circle-check";
+                const statusText = isSOS ? "SOS ALERT" : "ACTIVE";
 
-            snapshot.docChanges().forEach((change) => {
-                const data = change.doc.data();
-                const id = change.doc.id;
-
-                if (change.type === "added") {
-                    renderRow(id, data);
-                } else if (change.type === "modified") {
-                    updateRow(id, data);
-                } else if (change.type === "removed") {
-                    removeRow(id);
-                }
+                tr.innerHTML = `
+                    <td style="font-family:monospace; font-weight:bold; color:var(--accent-blue)">${id.substring(0,8)}</td>
+                    <td><strong>${data.fullName || "N/A"}</strong></td>
+                    <td style="color:#6b7280">${(data.lat || 0).toFixed(4)}, ${(data.lng || 0).toFixed(4)}</td>
+                    <td><span class="badge ${badgeClass}"><i class="fa-solid ${statusIcon}"></i> ${statusText}</span></td>
+                    <td>${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                    <td class="action-buttons">
+                        <button class="action-btn" onclick="showDetails('${id}')"><i class="fa-solid fa-eye"></i></button>
+                        <button class="action-btn btn-delete" onclick="deleteTourist('${id}')"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
             });
         });
 
-        // --- 2. RENDER FUNCTIONS ---
-        function renderRow(id, data) {
-            const tr = document.createElement("tr");
-            tr.id = `row-${id}`;
-            tr.innerHTML = getRowHTML(id, data);
-            tableBody.appendChild(tr);
-        }
-
-        function updateRow(id, data) {
-            const tr = document.getElementById(`row-${id}`);
-            if (tr) {
-                tr.innerHTML = getRowHTML(id, data);
-            }
-        }
-
-        function removeRow(id) {
-            const tr = document.getElementById(`row-${id}`);
-            if (tr) tr.remove();
-        }
-
-        function getRowHTML(id, data) {
-            const name = data.fullName || "Unknown";
-            const lat = data.lat ? data.lat.toFixed(4) : "N/A";
-            const lng = data.lng ? data.lng.toFixed(4) : "N/A";
-            const status = data.status || "Active";
-            const lastUpdate = new Date().toLocaleTimeString();
-
-            // Status Badge Logic
-            let badgeClass = "badge-unknown";
-            let statusIcon = "fa-question-circle";
-            
-            if (status === "Active") { 
-                badgeClass = "badge-active"; 
-                statusIcon = "fa-check-circle";
-            } else if (status === "SOS" || status === "MISSING") { 
-                badgeClass = "badge-sos"; 
-                statusIcon = "fa-exclamation-triangle";
-            }
-
-            return `
-                <td style="font-family: monospace; font-weight: bold;">${id.substring(0,8)}...</td>
-                <td>${name}</td>
-                <td>${lat}, ${lng}</td>
-                <td><span class="badge ${badgeClass}"><i class="fa-solid ${statusIcon}"></i> ${status}</span></td>
-                <td>${lastUpdate}</td>
-                <td class="action-buttons">
-                    <button class="action-btn" onclick="showDetails('${id}')" title="View Details"><i class="fa-solid fa-eye"></i></button>
-                    <button class="action-btn btn-delete" onclick="deleteTourist('${id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
-                </td>
-            `;
-        }
-
-        // --- 3. GLOBAL ACTIONS ---
-        
-        // Expose functions to window so onclick works
+        // Global Actions
         window.deleteTourist = async function(id) {
-            if(confirm("Are you sure you want to remove this tourist from the database?")) {
+            if(confirm("Confirm deletion of this tourist record? This cannot be undone.")) {
                 try {
-                    await deleteDoc(doc(db, TOURIST_COLLECTION, id));
-                } catch(e) {
-                    alert("Error deleting: " + e.message);
-                }
+                    await deleteDoc(doc(db, "users", id));
+                } catch(e) { alert("Error: " + e.message); }
             }
         };
 
         window.showDetails = function(id) {
-            // Find row data (In a real app, you might fetch fresh data)
             const tr = document.getElementById(`row-${id}`);
             if(!tr) return;
-            
-            // Extract text roughly for the modal demo
             const cols = tr.querySelectorAll('td');
             
             const html = `
-                <div class="detail-row"><span class="detail-label">ID:</span> <span>${id}</span></div>
+                <div class="detail-row"><span class="detail-label">Full ID:</span> <span>${id}</span></div>
                 <div class="detail-row"><span class="detail-label">Name:</span> <span>${cols[1].innerText}</span></div>
                 <div class="detail-row"><span class="detail-label">Location:</span> <span>${cols[2].innerText}</span></div>
                 <div class="detail-row"><span class="detail-label">Status:</span> <span>${cols[3].innerText}</span></div>
-                <div class="detail-row"><span class="detail-label">Last Ping:</span> <span>${cols[4].innerText}</span></div>
-                <br>
-                <button class="btn btn-primary" style="width:100%" onclick="closeModal()">Close</button>
+                <button class="close-modal" onclick="closeModal()">Close Profile</button>
             `;
-            
             document.getElementById('modal-content').innerHTML = html;
             document.getElementById('details-modal').style.display = 'flex';
         };
 
-        window.closeModal = function() {
-            document.getElementById('details-modal').style.display = 'none';
-        };
+        window.closeModal = () => document.getElementById('details-modal').style.display = 'none';
 
-        // Simple client-side search
         window.filterTable = function() {
-            const input = document.getElementById('search-input');
-            const filter = input.value.toUpperCase();
+            const filter = document.getElementById('search-input').value.toUpperCase();
             const trs = tableBody.getElementsByTagName('tr');
-
-            for (let i = 0; i < trs.length; i++) {
-                const idCol = trs[i].getElementsByTagName("td")[0];
-                if (idCol) {
-                    const txtValue = idCol.textContent || idCol.innerText;
-                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                        trs[i].style.display = "";
-                    } else {
-                        trs[i].style.display = "none";
-                    }
-                }       
+            for (let tr of trs) {
+                const text = tr.textContent || tr.innerText;
+                tr.style.display = text.toUpperCase().includes(filter) ? "" : "none";
             }
         };
     </script>
 </body>
 </html>
-
-
-
