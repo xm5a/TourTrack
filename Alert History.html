@@ -186,174 +186,164 @@
     </div>
 
 <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { 
-            getFirestore, 
-            collection, 
-            onSnapshot, 
-            query, 
-            orderBy, 
-            where, 
-            getDocs, 
-            addDoc, 
-            serverTimestamp,
-            deleteDoc
-        } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { 
+        getFirestore, 
+        collection, 
+        onSnapshot, 
+        query, 
+        orderBy, 
+        where, 
+        getDocs, 
+        addDoc, 
+        serverTimestamp,
+        deleteDoc
+    } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
-            authDomain: "tour-track-ddb18.firebaseapp.com",
-            projectId: "tour-track-ddb18",
-            storageBucket: "tour-track-ddb18.firebasestorage.app",
-            messagingSenderId: "426865781508",
-            appId: "1:426865781508:web:8fb7a409f00c536955be51",
-            measurementId: "G-TQZT1H6PPS"
-        };
+    const firebaseConfig = {
+        // ... (Keep your existing config here)
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const tableBody = document.getElementById('tableBody');
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const tableBody = document.getElementById('tableBody');
 
-        // ======================================================
-        // PART 1: MONITOR 'USERS' TO TRIGGER ALERTS AUTOMATICALLY
-        // ======================================================
-        
-        // Listen to the USERS collection
-        onSnapshot(collection(db, "users"), (snapshot) => {
-            snapshot.docChanges().forEach(async (change) => {
-                // We only care if a user was ADDED or MODIFIED
-                if (change.type === "added" || change.type === "modified") {
-                    const userData = change.doc.data();
-                    const userId = change.doc.id;
+    // ======================================================
+    // PART 1: MONITOR 'USERS' TO TRIGGER ALERTS AUTOMATICALLY
+    // ======================================================
+    
+    onSnapshot(collection(db, "users"), (snapshot) => {
+        snapshot.docChanges().forEach(async (change) => {
+            if (change.type === "added" || change.type === "modified") {
+                const userData = change.doc.data();
+                const userId = change.doc.id;
 
-                    // IF SOS IS TRUE -> Trigger the Logic
-                    if (userData.sos === true) {
-                        await createAlertIfNeeded(userId, userData);
-                    }
-                    else if(userData.sos === false){
-                        await deleteAlert(userId,userData);
-                    }
+                // FIX 1: Catch both boolean and string values
+                if (userData.sos === true || userData.sos === "true") {
+                    await createAlertIfNeeded(userId, userData);
                 }
-            });
-        });
-
-        // Function to create an alert ONLY if one doesn't exist yet
-        async function createAlertIfNeeded(userId, userData) {
-            const alertsRef = collection(db, "alerts");
-            
-            // 1. Check if an "Active" alert already exists for this user
-            // We don't want to create duplicates!
-            const q = query(
-                alertsRef, 
-                where("userId", "==", userId), 
-                where("status", "==", "Active")
-            );
-            
-            const existingAlerts = await getDocs(q);
-
-            // 2. If NO active alert exists, create one!
-            if (existingAlerts.empty) {
-                console.log(`Generating new SOS Alert for ${userData.fullName}...`);
-                
-                try {
-                    await addDoc(alertsRef, {
-                        userId: userId,
-                        userName: userData.fullName || "Unknown User",
-                        mobile: userData.mobile || "N/A",
-                        type: "SOS - Emergency", // This triggers your Red Badge CSS
-                        status: "Active",
-                        timestamp: serverTimestamp(), // Uses server time
-                        location: {
-                            lat: userData.lat || 0,
-                            lng: userData.lng || 0
-                        }
-                    });
-                    console.log("Alert generated successfully.");
-                } catch (error) {
-                    console.error("Error generating alert:", error);
+                else if(userData.sos === false || userData.sos === "false") {
+                    await deleteAlert(userId, userData);
                 }
-            } else {
-                // console.log("Active alert already exists for this user. Skipping.");
             }
-        }
+        });
+    });
 
-    async function deleteAlert(userId,userData){
+    async function createAlertIfNeeded(userId, userData) {
         const alertsRef = collection(db, "alerts");
-          const q = query(
-                alertsRef, 
-                where("userId", "==", userId), 
-                where("status", "==", "Active")
-            );
+        
+        const q = query(
+            alertsRef, 
+            where("userId", "==", userId), 
+            where("status", "==", "Active")
+        );
+        
         const existingAlerts = await getDocs(q);
-        if(!existingAlerts.empty){
-            console.log("Deleting User Docs from Alert");
 
-            try{
-                await deleteDoc(existingAlerts);
+        if (existingAlerts.empty) {
+            console.log(`Generating new SOS Alert for ${userData.fullName || userId}...`);
+            
+            try {
+                await addDoc(alertsRef, {
+                    userId: userId,
+                    userName: userData.fullName || "Unknown User",
+                    mobile: userData.mobile || "N/A",
+                    type: "SOS - Emergency", 
+                    status: "Active",
+                    timestamp: serverTimestamp(),
+                    location: {
+                        lat: userData.lat || 0,
+                        lng: userData.lng || 0
+                    }
+                });
+                console.log("Alert generated successfully.");
+            } catch (error) {
+                console.error("Error generating alert:", error);
             }
         }
     }
 
-
-        // ======================================================
-        // PART 2: DISPLAY THE ALERTS (Your Existing Table Logic)
-        // ======================================================
-
-        const alertsQuery = query(collection(db, "alerts"), orderBy("timestamp", "desc"));
-
-        onSnapshot(alertsQuery, (snapshot) => {
-            tableBody.innerHTML = ""; 
-
-            if (!snapshot.empty) {
-                snapshot.forEach((doc) => {
-                    const alertData = doc.data();
-                    
-                    // Format Date
-                    let dateStr = "Just Now";
-                    if (alertData.timestamp) {
-                        // Handle Firestore timestamp vs Date object
-                        const date = alertData.timestamp.toDate ? alertData.timestamp.toDate() : new Date(alertData.timestamp);
-                        dateStr = date.toLocaleString('en-IN', { 
-                            day: '2-digit', month: 'short', 
-                            hour: '2-digit', minute: '2-digit' 
-                        });
-                    }
-
-                    // Badge Logic
-                    let badgeClass = "badge-safe";
-                    let icon = "";
-                    const type = alertData.type || "Unknown";
-                    
-                    if (type.toLowerCase().includes("sos")) {
-                        badgeClass = "badge-sos";
-                        icon = '<i class="fa-solid fa-bell" style="margin-right:5px;"></i>';
-                    } else if (type.toLowerCase().includes("geofence")) {
-                        badgeClass = "badge-geo";
-                        icon = '<i class="fa-solid fa-location-dot" style="margin-right:5px;"></i>';
-                    }
-
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${dateStr}</td>
-                        <td>
-                            <span class="badge ${badgeClass}">
-                                ${icon} ${type}
-                            </span>
-                        </td>
-                        <td><strong>${alertData.userName || 'Unknown'}</strong></td>
-                        <td>${alertData.mobile || 'N/A'}</td>
-                        <td style="font-weight:bold; color: ${alertData.status === 'Active' ? '#dc2626' : '#16a34a'}">
-                            ${alertData.status || 'Active'}
-                        </td>
-                    `;
-                    tableBody.appendChild(row);
+    async function deleteAlert(userId, userData){
+        const alertsRef = collection(db, "alerts");
+        const q = query(
+            alertsRef, 
+            where("userId", "==", userId), 
+            where("status", "==", "Active")
+        );
+        const existingAlerts = await getDocs(q);
+        
+        if(!existingAlerts.empty){
+            console.log(`Deleting active alerts for ${userData.fullName || userId}...`);
+            try {
+                // FIX 2: Loop through the snapshot to delete specific document references
+                existingAlerts.forEach(async (docSnapshot) => {
+                    await deleteDoc(docSnapshot.ref);
                 });
-            } else {
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No alerts found.</td></tr>';
+                console.log("Alerts successfully cleared.");
+            } catch(error) {
+                console.error("Error deleting alert:", error);
             }
-        });
-    </script>
+        }
+    }
+
+    // ======================================================
+    // PART 2: DISPLAY THE ALERTS
+    // ======================================================
+
+    const alertsQuery = query(collection(db, "alerts"), orderBy("timestamp", "desc"));
+
+    onSnapshot(alertsQuery, (snapshot) => {
+        tableBody.innerHTML = ""; 
+
+        if (!snapshot.empty) {
+            snapshot.forEach((doc) => {
+                const alertData = doc.data();
+                
+                let dateStr = "Just Now";
+                // Safety check to ensure the timestamp has resolved from the server
+                if (alertData.timestamp && alertData.timestamp.toDate) {
+                    const date = alertData.timestamp.toDate();
+                    dateStr = date.toLocaleString('en-IN', { 
+                        day: '2-digit', month: 'short', 
+                        hour: '2-digit', minute: '2-digit' 
+                    });
+                }
+
+                let badgeClass = "badge-safe";
+                let icon = "";
+                const type = alertData.type || "Unknown";
+                
+                if (type.toLowerCase().includes("sos")) {
+                    badgeClass = "badge-sos";
+                    icon = '<i class="fa-solid fa-bell" style="margin-right:5px;"></i>';
+                } else if (type.toLowerCase().includes("geofence")) {
+                    badgeClass = "badge-geo";
+                    icon = '<i class="fa-solid fa-location-dot" style="margin-right:5px;"></i>';
+                }
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${dateStr}</td>
+                    <td>
+                        <span class="badge ${badgeClass}">
+                            ${icon} ${type}
+                        </span>
+                    </td>
+                    <td><strong>${alertData.userName || 'Unknown'}</strong></td>
+                    <td>${alertData.mobile || 'N/A'}</td>
+                    <td style="font-weight:bold; color: ${alertData.status === 'Active' ? '#dc2626' : '#16a34a'}">
+                        ${alertData.status || 'Active'}
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } else {
+            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No alerts found.</td></tr>';
+        }
+    });
+</script>
 </body>
 </html>
+
 
 
