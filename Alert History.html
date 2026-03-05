@@ -20,6 +20,282 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        /* Firefox Grid Fix */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            display: grid;
+            grid-template-columns: var(--sidebar-width) 1fr;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 2.5rem 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-nav { list-style: none; margin-top: 0.5rem; }
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 14px 24px;
+            color: #9ca3af;
+            text-decoration: none;
+            margin: 4px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .sidebar-nav a.active {
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, rgba(31, 41, 55, 1) 100%);
+            color: #fff;
+            box-shadow: inset 4px 0 0 var(--accent-blue);
+        }
+
+        .main-content {
+            grid-column: 2; /* Ensures content stays to the right of sidebar */
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .header {
+            background: var(--glass-white);
+            backdrop-filter: blur(12px);
+            padding: 1.2rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 900;
+        }
+
+        .content-container {
+            padding: 2rem;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.04);
+            overflow-x: auto; /* Handle table overflow on small screens */
+        }
+
+        .history-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        .history-table th {
+            background-color: #f9fafb;
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #6b7280;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .history-table td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        .badge-sos {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.7rem;
+        }
+
+        .track-btn {
+            background: var(--accent-blue);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-loading { padding: 4rem; text-align: center; color: #6b7280; }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <i class="fa-solid fa-shield-halved" style="color: var(--accent-blue);"></i>
+            <span>Safety Hub</span>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="homepage.html"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+            <li><a href="#" class="active"><i class="fa-solid fa-bullhorn"></i> Alert History</a></li>
+            <li><a href="TouristID.html"><i class="fa-solid fa-id-card"></i> Tourist IDs</a></li>
+            <li><a href="ZoneManagement.html"><i class="fa-solid fa-map-location-dot"></i> Zone Management</a></li>
+            <li><a href="Reports.html"><i class="fa-solid fa-chart-simple"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <h1>Alert History</h1>
+            <div class="user-profile">
+                <span>Welcome, <strong>Admin</strong> <i class="fa-solid fa-circle-user" style="margin-left:8px;"></i></span>
+            </div>
+        </header>
+        
+        <div class="content-container">
+            <div class="card">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Alert Type</th>
+                            <th>User Name</th>
+                            <th>Contact</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="6" class="status-loading"><i class="fa-solid fa-spinner fa-spin"></i> Syncing...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { 
+            getFirestore, collection, onSnapshot, query, orderBy, limit, where, getDocs, addDoc, serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
+            authDomain: "tour-track-ddb18.firebaseapp.com",
+            projectId: "tour-track-ddb18",
+            storageBucket: "tour-track-ddb18.firebasestorage.app",
+            messagingSenderId: "426865781508",
+            appId: "1:426865781508:web:8fb7a409f00c536955be51"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const tableBody = document.getElementById('tableBody');
+
+        // Logic: Create new entry if SOS is true AND no entry was made in last 30 mins
+        onSnapshot(collection(db, "users"), (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === "added" || change.type === "modified") {
+                    const userData = change.doc.data();
+                    const userId = change.doc.id;
+
+                    if (userData.sos === true || String(userData.sos).toLowerCase() === "true") {
+                        const now = new Date();
+                        const thirtyMinsAgo = new Date(now.getTime() - 30 * 60000);
+
+                        // Check history for recent duplicate
+                        const alertsRef = collection(db, "alerts");
+                        const q = query(
+                            alertsRef, 
+                            where("userId", "==", userId), 
+                            orderBy("timestamp", "desc"), 
+                            limit(1)
+                        );
+
+                        const lastAlert = await getDocs(q);
+                        let shouldAdd = true;
+
+                        if (!lastAlert.empty) {
+                            const lastData = lastAlert.docs[0].data();
+                            if (lastData.timestamp?.toDate) {
+                                const lastTime = lastData.timestamp.toDate();
+                                if (lastTime > thirtyMinsAgo) shouldAdd = false; 
+                            }
+                        }
+
+                        if (shouldAdd) {
+                            await addDoc(collection(db, "alerts"), {
+                                userId: userId,
+                                userName: userData.fullName || "User",
+                                mobile: userData.mobile || "N/A",
+                                type: "SOS - EMERGENCY", 
+                                status: "Active",
+                                timestamp: serverTimestamp(),
+                                location: { lat: userData.lat || 0, lng: userData.lng || 0 }
+                            });
+                        }
+                    }
+                }
+            });
+        });
+
+        // UI: Render table
+        onSnapshot(query(collection(db, "alerts"), orderBy("timestamp", "desc")), (snapshot) => {
+            tableBody.innerHTML = ""; 
+            if (snapshot.empty) {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:3rem;">No alerts found.</td></tr>';
+                return;
+            }
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const time = data.timestamp?.toDate ? data.timestamp.toDate().toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : "Just Now";
+                const url = `homepage.html?trackLat=${data.location?.lat}&trackLng=${data.location?.lng}&focusUser=${data.userId}`;
+
+                const row = `<tr>
+                    <td style="white-space:nowrap;">${time}</td>
+                    <td><span class="badge-sos"><i class="fa-solid fa-bell"></i> SOS</span></td>
+                    <td><strong>${data.userName}</strong></td>
+                    <td>${data.mobile}</td>
+                    <td style="color:#dc2626; font-weight:700;">Active</td>
+                    <td><a href="${url}" class="track-btn">Locate</a></td>
+                </tr>`;
+                tableBody.insertAdjacentHTML('beforeend', row);
+            });
+        });
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alert History - Safety Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --sidebar-bg: #111827;
+            --sidebar-hover: #1f2937;
+            --accent-blue: #3b82f6;
+            --bg-body: #f3f4f6;
+            --glass-white: rgba(255, 255, 255, 0.95);
+            --border-color: #e5e7eb;
+            --sidebar-width: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-body);
@@ -621,4 +897,5 @@
     </script>
 </body>
 </html>
+
 
