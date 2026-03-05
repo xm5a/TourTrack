@@ -3,176 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tourist Safety - Command Center</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>Dashboard - Safety Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" rel="stylesheet" />
-    
+
     <style>
         :root {
-            --bg-color: #f4f7fa;
-            --sidebar-bg: #1f2937;
-            --sidebar-text: #d1d5db;
-            --sidebar-hover: #374151;
-            --header-bg: #ffffff;
-            --card-bg: #ffffff;
+            --sidebar-bg: #111827;
+            --sidebar-hover: #1f2937;
+            --accent-blue: #3b82f6;
+            --bg-body: #f3f4f6;
+            --glass-white: rgba(255, 255, 255, 0.98);
             --border-color: #e5e7eb;
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --alert-critical-bg: #fee2e2;
-            --alert-critical-text: #b91c1c;
-            --alert-warning-bg: #fffbeb;
-            --alert-warning-text: #b45309;
-            --alert-info-bg: #e2e8f0;
-            --alert-info-text: #2d3748;
+            --sidebar-width: 260px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Roboto', sans-serif; background-color: var(--bg-color); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
-        
-        .page-wrapper { display: flex; width: 100%; height: 100%; }
-        .sidebar { width: 250px; background-color: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar-header { text-align: center; padding: 1.5rem; border-bottom: 1px solid var(--sidebar-hover); }
-        .sidebar-header h2 { font-size: 1.5rem; color: #fff; }
-        .sidebar-nav { flex-grow: 1; list-style: none; margin-top: 1rem; }
-        .sidebar-nav a { display: flex; align-items: center; padding: 1rem 1.5rem; color: var(--sidebar-text); text-decoration: none; font-weight: 500; transition: 0.2s; }
-        .sidebar-nav a:hover, .sidebar-nav a.active { background-color: var(--sidebar-hover); color: #fff; }
-        .sidebar-nav a i { width: 25px; margin-right: 1rem; text-align: center; }
-        
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .header { background-color: var(--header-bg); border-bottom: 1px solid var(--border-color); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-        .header-search input { border: 1px solid var(--border-color); border-radius: 8px; padding: 0.6rem 1rem; width: 300px; }
-        .user-profile { display: flex; align-items: center; gap: 10px; font-weight: 500; }
-        
-        .dashboard-container { padding: 2rem; display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: auto 1fr; gap: 2rem; height: 100%; overflow-y: auto; }
-        .stats-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
-        .stat-card { background-color: var(--card-bg); border-radius: 12px; padding: 1.5rem; display: flex; align-items: center; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .stat-card .icon { font-size: 2rem; padding: 1rem; border-radius: 50%; margin-right: 1.5rem; }
-        .stat-card .icon.users { background: var(--alert-info-bg); color: var(--alert-info-text); }
-        .stat-card .icon.alerts { background: var(--alert-critical-bg); color: var(--alert-critical-text); }
-        .stat-card .icon.zones { background: var(--alert-warning-bg); color: var(--alert-warning-text); }
-        .stat-card h3 { font-size: 2rem; font-weight: 700; }
-        .stat-card p { color: var(--text-secondary); font-weight: 500; }
 
-        .panel { background-color: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
-        .panel-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); font-weight: 700; }
-        
-        .map-panel { height: 100%; min-height: 400px; }
-        .map-container { flex-grow: 1; position: relative; }
-        #map-container { width: 100%; height: 100%; }
+        /* Firefox-Perfect Grid Layout */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            display: grid;
+            grid-template-columns: var(--sidebar-width) 1fr;
+            min-height: 100vh;
+            overflow: hidden;
+        }
 
-        .alerts-panel { height: 100%; }
-        .alerts-feed { flex-grow: 1; overflow-y: auto; }
-        .alert-item { display: flex; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); animation: fadeIn 0.5s ease-out; }
-        .alert-icon { font-size: 1.2rem; margin-right: 1rem; width: 20px; }
-        .alert-critical-text { color: var(--alert-critical-text); }
-        .alert-info-text { color: #2563eb; }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        /* --- SHARED SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 2.5rem 1.5rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            display: flex; align-items: center; gap: 12px;
+        }
+
+        .sidebar-nav { list-style: none; margin-top: 0.5rem; }
+        .sidebar-nav a {
+            display: flex; align-items: center; padding: 14px 24px;
+            color: #9ca3af; text-decoration: none; margin: 4px 16px;
+            border-radius: 8px; font-size: 0.95rem; transition: 0.2s;
+        }
+
+        .sidebar-nav a:hover, .sidebar-nav a.active {
+            color: #fff; background-color: var(--sidebar-hover);
+        }
+
+        .sidebar-nav a.active {
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(31, 41, 55, 1) 100%);
+            box-shadow: inset 4px 0 0 var(--accent-blue);
+        }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            grid-column: 2;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .header {
+            background: var(--glass-white);
+            backdrop-filter: blur(12px);
+            padding: 1.2rem 2.5rem;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky; top: 0; z-index: 900;
+        }
+
+        .header input {
+            border: 1px solid var(--border-color);
+            padding: 10px 16px; border-radius: 8px; width: 320px; outline: none;
+        }
+
+        /* --- DASHBOARD GRID --- */
+        .dashboard-container {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 1.5rem;
+            flex-grow: 1;
+        }
+
+        .stats-grid {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            background: white; border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 1.5rem; display: flex; align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .stat-card .icon {
+            width: 48px; height: 48px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; margin-right: 1.25rem;
+        }
+
+        .icon.users { background: #eff6ff; color: #3b82f6; }
+        .icon.alerts { background: #fef2f2; color: #ef4444; }
+        .icon.zones { background: #fffbeb; color: #f59e0b; }
+
+        .stat-card h3 { font-size: 1.75rem; font-weight: 700; color: #111827; }
+        .stat-card p { font-size: 0.85rem; color: #6b7280; font-weight: 500; }
+
+        /* Panels */
+        .panel {
+            background: white; border: 1px solid var(--border-color);
+            border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .panel-header {
+            padding: 1.25rem 1.5rem; font-weight: 700; border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        #map-container { width: 100%; height: 500px; background: #e2e8f0; }
+
+        /* Alerts Feed */
+        .alerts-feed { flex-grow: 1; overflow-y: auto; max-height: 500px; }
+        .alert-item {
+            padding: 1.25rem; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: flex-start; gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .alert-item i { font-size: 1rem; margin-top: 3px; }
+        .alert-details p { font-size: 0.9rem; font-weight: 600; color: #111827; }
+        .alert-details span { font-size: 0.75rem; color: #6b7280; }
+
+        .marker-pulse {
+            width: 15px; height: 15px; border-radius: 50%;
+            border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
-    <div class="page-wrapper">
-        <nav class="sidebar">
-            <div class="sidebar-header">
-                <h2><i class="fa-solid fa-shield-halved"></i> Safety Hub</h2>
+
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <i class="fa-solid fa-shield-halved" style="color: var(--accent-blue);"></i>
+            <span>Safety Hub</span>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="homepage.html" class="active"><i class="fa-solid fa-house"></i> Dashboard</a></li>
+            <li><a href="Alert History.html"><i class="fa-solid fa-bullhorn"></i> Alert History</a></li>
+            <li><a href="TouristID.html"><i class="fa-solid fa-id-card"></i> Tourist IDs</a></li>
+            <li><a href="ZoneManagement.html"><i class="fa-solid fa-map-location-dot"></i> Zone Management</a></li>
+            <li><a href="Reports.html"><i class="fa-solid fa-chart-line"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <input type="text" placeholder="Quick Search Tourist ID...">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <span>Welcome, <strong>Admin</strong></span>
+                <i class="fa-solid fa-circle-user" style="font-size: 1.6rem; color: #4b5563;"></i>
             </div>
-            <ul class="sidebar-nav">
-                <li><a href="homepage.html" class="active"><i class="fa-solid fa-table-columns"></i> Dashboard</a></li>
-                <li><a href="Alert%20History.html"><i class="fa-solid fa-bullhorn"></i> Alert History</a></li>
-                <li><a href="TouristID.html"><i class="fa-solid fa-users"></i> Tourist IDs</a></li>
-                <li><a href="ZoneManagement.html"><i class="fa-solid fa-map-marked-alt"></i> Zone Management</a></li>
-                <li><a href="Reports.html"><i class="fa-solid fa-chart-line"></i> Reports</a></li>
-            </ul>
-        </nav>
-
-        <main class="main-content">
-            <header class="header">
-                <div class="header-search">
-                    <input type="text" placeholder="Track Tourist by ID...">
-                </div>
-                <div class="user-profile">
-                    <span>Welcome, Admin</span>
-                    <i class="fa-solid fa-user-circle"></i>
-                </div>
-            </header>
-            
-            <div class="dashboard-container">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="icon users"><i class="fa-solid fa-users"></i></div>
-                        <div class="info">
-                            <h3 id="activetcount">0</h3>
-                            <p>Active Tourists</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="icon alerts"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                        <div class="info">
-                            <h3 id="alert-count-display">0</h3> <p>Active Alerts</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="icon zones"><i class="fa-solid fa-draw-polygon"></i></div>
-                        <div class="info">
-                            <h3 id="HRisk">3</h3>
-                            <p>High-Risk Zones</p>
-                        </div>
+        </header>
+        
+        <div class="dashboard-container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="icon users"><i class="fa-solid fa-users"></i></div>
+                    <div>
+                        <h3 id="activetcount">0</h3>
+                        <p>Active Tourists</p>
                     </div>
                 </div>
-
-                <div class="panel map-panel">
-                    <div class="panel-header">Live Tourist Map</div>
-                    <div class="map-container">
-                        <div id="map-container"></div>
+                <div class="stat-card">
+                    <div class="icon alerts"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div>
+                        <h3 id="alert-count-display">0</h3>
+                        <p>Active Alerts</p>
                     </div>
                 </div>
-
-                <div class="panel alerts-panel">
-                    <div class="panel-header">Live Alerts Feed</div>
-                    <div class="alerts-feed">
-                        </div>
+                <div class="stat-card">
+                    <div class="icon zones"><i class="fa-solid fa-draw-polygon"></i></div>
+                    <div>
+                        <h3 id="HRisk">3</h3>
+                        <p>High-Risk Zones</p>
+                    </div>
                 </div>
             </div>
-        </main>
-    </div>
+
+            <div class="panel">
+                <div class="panel-header">Live Monitoring Map</div>
+                <div id="map-container"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">Real-time Activity</div>
+                <div class="alerts-feed" id="alerts-feed">
+                    <div style="text-align:center; padding: 2rem; color: #9ca3af; font-size: 0.85rem;">
+                        Waiting for live activity...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
         import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-        // --- CONFIGURATION ---
         const firebaseConfig = {
-
-  apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
-
-  authDomain: "tour-track-ddb18.firebaseapp.com",
-
-  projectId: "tour-track-ddb18",
-
-  storageBucket: "tour-track-ddb18.firebasestorage.app",
-
-  messagingSenderId: "426865781508",
-
-  appId: "1:426865781508:web:8fb7a409f00c536955be51",
-
-  measurementId: "G-TQZT1H6PPS"
-
-};
-
-
+            apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
+            authDomain: "tour-track-ddb18.firebaseapp.com",
+            projectId: "tour-track-ddb18",
+            storageBucket: "tour-track-ddb18.firebasestorage.app",
+            messagingSenderId: "426865781508",
+            appId: "1:426865781508:web:8fb7a409f00c536955be51"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const TOURIST_COLLECTION_PATH = "users";
-        
         const touristMarkers = {};
         let alertCounter = 0;
 
-        // --- MAP INITIALIZATION ---
-        // Centered on Thane, India (Your location context)
+        // MapLibre init
         const map = new maplibregl.Map({
             container: 'map-container',
             style: {
@@ -181,133 +253,79 @@
                     'carto-tiles': {
                         type: 'raster',
                         tiles: ['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],
-                        tileSize: 256,
-                        attribution: '© CARTO'
+                        tileSize: 256
                     }
                 },
-                layers: [{
-                    id: 'simple-tiles',
-                    type: 'raster',
-                    source: 'carto-tiles',
-                    minzoom: 0,
-                    maxzoom: 22
-                }]
+                layers: [{ id: 'simple-tiles', type: 'raster', source: 'carto-tiles' }]
             },
-            center: [72.978088, 19.218331], // Thane
-            zoom: 12
+            center: [72.978088, 19.218331],
+            zoom: 13
         });
 
-        // --- UI FUNCTIONS ---
+        function updateUI(type, id, status) {
+            const feed = document.getElementById('alerts-feed');
+            if(feed.querySelector('div[style*="text-align:center"]')) feed.innerHTML = '';
 
-        function updateTouristCountDisplay() {
-            const count = Object.keys(touristMarkers).length;
-            const el = document.getElementById("activetcount");
-            if (el) el.innerText = count;
-        }
-
-        function updateAlertCount(increment) {
-            const el = document.getElementById("alert-count-display");
-            if (el) {
-                if(increment) alertCounter++;
-                // Simple logic: Display total alerts generated in this session
-                el.innerText = alertCounter;
-            }
-        }
-
-        function insertAlert(type, touristId) {
-            const feed = document.querySelector('.alerts-feed');
-            if (!feed) return;
-
-            let iconClass = type === 'add' ? 'fa-solid fa-plus' : 'fa-solid fa-minus';
-            let alertText = type === 'add' ? 'NEW Tourist Detected' : 'Tourist Disconnected';
-            let colorClass = type === 'add' ? 'alert-info-text' : 'alert-critical-text';
-            let time = new Date().toLocaleTimeString();
+            const isAdd = type === 'add';
+            const icon = isAdd ? 'fa-circle-check' : 'fa-circle-xmark';
+            const color = isAdd ? '#10b981' : '#ef4444';
+            const text = isAdd ? 'New Tourist Tracked' : 'Tourist Offline';
 
             const html = `
                 <div class="alert-item">
-                    <div class="alert-icon ${colorClass}"><i class="${iconClass}"></i></div>
+                    <i class="fa-solid ${icon}" style="color: ${color}"></i>
                     <div class="alert-details">
-                        <p>${alertText}</p>
-                        <span>ID: ${touristId} • ${time}</span>
+                        <p>${text}</p>
+                        <span>ID: ${id.substring(0,8)}... • ${new Date().toLocaleTimeString()}</span>
                     </div>
-                </div>
-            `;
-            feed.insertAdjacentHTML('afterbegin', html);
-             // Increment stat card
+                </div>`;
             
-            // Limit feed to 10 items
-            if(feed.children.length > 10) feed.lastElementChild.remove();
+            feed.insertAdjacentHTML('afterbegin', html);
+            if(feed.children.length > 8) feed.lastElementChild.remove();
         }
 
-        // --- MAP FUNCTIONS ---
-
-        function updateMapMarker(touristId, lat, lon, status) {
-            const coords = [lon, lat]; // GeoJSON order: [Lng, Lat]
-            const popupText = `<strong>ID:</strong> ${touristId}<br><strong>Live Status:</strong> ${status || 'Active'}`;
-
-            if (touristMarkers[touristId]) {
-                // Update existing
-                touristMarkers[touristId].marker.setLngLat(coords);
-                touristMarkers[touristId].popup.setHTML(popupText);
-            } else {
-                // Create new
-                const popup = new maplibregl.Popup({ offset: 25 }).setHTML(popupText);
-                const el = document.createElement('div');
-                el.className = 'marker';
-                el.style.width = '20px';
-                el.style.height = '20px';
-                el.style.borderRadius = '50%';
-                el.style.border = '2px solid white';
-                el.style.backgroundColor = status === 'SOS' ? '#ef4444' : '#3b82f6';
-                el.style.cursor = 'pointer';
-
-                const marker = new maplibregl.Marker({ element: el })
-                    .setLngLat(coords)
-                    .setPopup(popup)
-                    .addTo(map);
-
-                touristMarkers[touristId] = { marker, popup };
-                insertAlert('add', touristId);
-                
-                // Fly to new user
-                map.flyTo({ center: coords, speed: 0.5 });
-            }
-            updateTouristCountDisplay();
-        }
-
-        function removeMapMarker(touristId) {
-            if (touristMarkers[touristId]) {
-                touristMarkers[touristId].marker.remove();
-                delete touristMarkers[touristId];
-                insertAlert('remove', touristId);
-                updateTouristCountDisplay();
-            }
-        }
-
-        // --- FIREBASE LISTENER ---
-        const touristCollection = collection(db, TOURIST_COLLECTION_PATH);
-
-        onSnapshot(touristCollection, (snapshot) => {
+        onSnapshot(collection(db, "users"), (snapshot) => {
             snapshot.docChanges().forEach((change) => {
                 const data = change.doc.data();
                 const id = change.doc.id;
 
                 if (change.type === "added" || change.type === "modified") {
                     if (data.lat && data.lng) {
-                        updateMapMarker(id, data.lat, data.lng, 'Active');
-                        if(data.sos === true){
-            updateAlertCount(true);
+                        const isSOS = data.sos === true;
+                        
+                        // Marker logic
+                        if (touristMarkers[id]) {
+                            touristMarkers[id].setLngLat([data.lng, data.lat]);
+                            touristMarkers[id].getElement().style.backgroundColor = isSOS ? '#ef4444' : '#3b82f6';
+                        } else {
+                            const el = document.createElement('div');
+                            el.className = 'marker-pulse';
+                            el.style.backgroundColor = isSOS ? '#ef4444' : '#3b82f6';
+                            
+                            const marker = new maplibregl.Marker({ element: el })
+                                .setLngLat([data.lng, data.lat])
+                                .addTo(map);
+                            
+                            touristMarkers[id] = marker;
+                            updateUI('add', id);
+                            map.flyTo({ center: [data.lng, data.lat], speed: 0.8 });
+                        }
+
+                        if(isSOS) {
+                            alertCounter++;
+                            document.getElementById("alert-count-display").innerText = alertCounter;
                         }
                     }
                 } else if (change.type === "removed") {
-                    removeMapMarker(id);
+                    if (touristMarkers[id]) {
+                        touristMarkers[id].remove();
+                        delete touristMarkers[id];
+                        updateUI('remove', id);
+                    }
                 }
             });
+            document.getElementById("activetcount").innerText = Object.keys(touristMarkers).length;
         });
-
     </script>
 </body>
 </html>
-
-
-
