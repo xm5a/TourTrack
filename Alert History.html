@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-        /* --- KEEP YOUR EXISTING CSS VARIABLES & LAYOUT --- */
         :root {
             --bg-color: #f4f7fa;
             --sidebar-bg: #1f2937;
@@ -31,7 +30,7 @@
         
         .page-wrapper { display: flex; width: 100%; }
 
-        /* Sidebar Styles (Unchanged) */
+        /* Sidebar Styles */
         .sidebar {
             width: 250px;
             background-color: var(--sidebar-bg);
@@ -81,7 +80,7 @@
 
         .content-container { padding: 2rem; }
 
-        /* --- UPDATED TABLE STYLES --- */
+        /* Table Styles */
         .history-table {
             width: 100%;
             border-collapse: collapse;
@@ -95,6 +94,7 @@
             padding: 1rem 1.5rem;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
         }
 
         .history-table thead { background-color: #f9fafb; }
@@ -105,7 +105,7 @@
             text-transform: uppercase;
         }
 
-        /* --- NEW: ALERT BADGES --- */
+        /* Alert Badges */
         .badge {
             display: inline-flex;
             align-items: center;
@@ -116,25 +116,43 @@
             text-transform: uppercase;
         }
 
-        /* Red for SOS/Critical */
         .badge-sos {
             background-color: #fef2f2;
             color: #dc2626;
             border: 1px solid #fecaca;
         }
 
-        /* Orange for Geofence */
         .badge-geo {
             background-color: #fff7ed;
             color: #ea580c;
             border: 1px solid #fed7aa;
         }
 
-        /* Green for Resolved/Safe */
         .badge-safe {
             background-color: #f0fdf4;
             color: #16a34a;
             border: 1px solid #bbf7d0;
+        }
+
+        /* Track Button Styles */
+        .track-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            background-color: #2563eb;
+            color: white;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .track-btn:hover {
+            background-color: #1d4ed8;
         }
 
         .status-loading { text-align: center; padding: 2rem; color: var(--text-secondary); }
@@ -173,11 +191,11 @@
                             <th>User Name</th>
                             <th>Contact</th>
                             <th>Status</th>
-                        </tr>
+                            <th style="width: 120px;">Action</th> </tr>
                     </thead>
                     <tbody id="tableBody">
                         <tr>
-                            <td colspan="5" class="status-loading">Loading Alerts...</td>
+                            <td colspan="6" class="status-loading">Loading Alerts...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -185,178 +203,178 @@
         </main>
     </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-    import { 
-        getFirestore, 
-        collection, 
-        onSnapshot, 
-        query, 
-        orderBy, 
-        where, 
-        getDocs, 
-        addDoc, 
-        serverTimestamp,
-        deleteDoc
-    } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            onSnapshot, 
+            query, 
+            orderBy, 
+            where, 
+            getDocs, 
+            addDoc, 
+            serverTimestamp,
+            deleteDoc
+        } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-             apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
-
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
             authDomain: "tour-track-ddb18.firebaseapp.com",
-
             projectId: "tour-track-ddb18",
-
             storageBucket: "tour-track-ddb18.firebasestorage.app",
-
             messagingSenderId: "426865781508",
-
             appId: "1:426865781508:web:8fb7a409f00c536955be51",
+            measurementId: "G-TQZT1H6PPS"
+        };
 
-            measurementId: "G-TQZT1H6PPS" 
-    };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const tableBody = document.getElementById('tableBody');
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const tableBody = document.getElementById('tableBody');
+        // ======================================================
+        // PART 1: MONITOR 'USERS' TO TRIGGER ALERTS AUTOMATICALLY
+        // ======================================================
+        
+        onSnapshot(collection(db, "users"), (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === "added" || change.type === "modified") {
+                    const userData = change.doc.data();
+                    const userId = change.doc.id;
 
-    // ======================================================
-    // PART 1: MONITOR 'USERS' TO TRIGGER ALERTS AUTOMATICALLY
-    // ======================================================
-    
-    onSnapshot(collection(db, "users"), (snapshot) => {
-        snapshot.docChanges().forEach(async (change) => {
-            if (change.type === "added" || change.type === "modified") {
-                const userData = change.doc.data();
-                const userId = change.doc.id;
-
-                // FIX 1: Catch both boolean and string values
-                if (userData.sos === true || userData.sos === "true") {
-                    await createAlertIfNeeded(userId, userData);
+                    // Support for both boolean and string representations of true/false
+                    if (userData.sos === true || String(userData.sos).toLowerCase() === "true") {
+                        await createAlertIfNeeded(userId, userData);
+                    }
+                    else if(userData.sos === false || String(userData.sos).toLowerCase() === "false") {
+                        await deleteAlert(userId, userData);
+                    }
                 }
-                else if(userData.sos === false || userData.sos === "false") {
-                    await deleteAlert(userId, userData);
+            });
+        });
+
+        async function createAlertIfNeeded(userId, userData) {
+            const alertsRef = collection(db, "alerts");
+            
+            const q = query(
+                alertsRef, 
+                where("userId", "==", userId), 
+                where("status", "==", "Active")
+            );
+            
+            const existingAlerts = await getDocs(q);
+
+            if (existingAlerts.empty) {
+                console.log(`Generating new SOS Alert for ${userData.fullName || 'User'}...`);
+                
+                try {
+                    await addDoc(alertsRef, {
+                        userId: userId,
+                        userName: userData.fullName || "Unknown User",
+                        mobile: userData.mobile || "N/A",
+                        type: "SOS - Emergency", 
+                        status: "Active",
+                        timestamp: serverTimestamp(),
+                        location: {
+                            lat: userData.lat || 0,
+                            lng: userData.lng || 0
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error generating alert:", error);
                 }
+            }
+        }
+
+        async function deleteAlert(userId, userData){
+            const alertsRef = collection(db, "alerts");
+            const q = query(
+                alertsRef, 
+                where("userId", "==", userId), 
+                where("status", "==", "Active")
+            );
+            const existingAlerts = await getDocs(q);
+            
+            if(!existingAlerts.empty){
+                try {
+                    // Loop through snapshot and delete specific document references
+                    existingAlerts.forEach(async (docSnapshot) => {
+                        await deleteDoc(docSnapshot.ref);
+                    });
+                } catch(error) {
+                    console.error("Error deleting alert:", error);
+                }
+            }
+        }
+
+        // ======================================================
+        // PART 2: DISPLAY THE ALERTS AND GENERATE TRACKING URL
+        // ======================================================
+
+        const alertsQuery = query(collection(db, "alerts"), orderBy("timestamp", "desc"));
+
+        onSnapshot(alertsQuery, (snapshot) => {
+            tableBody.innerHTML = ""; 
+
+            if (!snapshot.empty) {
+                snapshot.forEach((doc) => {
+                    const alertData = doc.data();
+                    
+                    // Format Date safely
+                    let dateStr = "Just Now";
+                    if (alertData.timestamp && alertData.timestamp.toDate) {
+                        const date = alertData.timestamp.toDate();
+                        dateStr = date.toLocaleString('en-IN', { 
+                            day: '2-digit', month: 'short', 
+                            hour: '2-digit', minute: '2-digit' 
+                        });
+                    }
+
+                    // Badge Logic
+                    let badgeClass = "badge-safe";
+                    let icon = "";
+                    const type = alertData.type || "Unknown";
+                    
+                    if (type.toLowerCase().includes("sos")) {
+                        badgeClass = "badge-sos";
+                        icon = '<i class="fa-solid fa-bell" style="margin-right:5px;"></i>';
+                    } else if (type.toLowerCase().includes("geofence")) {
+                        badgeClass = "badge-geo";
+                        icon = '<i class="fa-solid fa-location-dot" style="margin-right:5px;"></i>';
+                    }
+
+                    // Location data for tracking button
+                    const lat = alertData.location?.lat || 0;
+                    const lng = alertData.location?.lng || 0;
+                    const uid = alertData.userId || "";
+                    const trackUrl = `homepage.html?trackLat=${lat}&trackLng=${lng}&focusUser=${uid}`;
+
+                    // Create Row
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${dateStr}</td>
+                        <td>
+                            <span class="badge ${badgeClass}">
+                                ${icon} ${type}
+                            </span>
+                        </td>
+                        <td><strong>${alertData.userName || 'Unknown'}</strong></td>
+                        <td>${alertData.mobile || 'N/A'}</td>
+                        <td style="font-weight:bold; color: ${alertData.status === 'Active' ? '#dc2626' : '#16a34a'}">
+                            ${alertData.status || 'Active'}
+                        </td>
+                        <td>
+                            <a href="${trackUrl}" class="track-btn">
+                                <i class="fa-solid fa-crosshairs"></i> Locate
+                            </a>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No alerts found.</td></tr>';
             }
         });
-    });
-
-    async function createAlertIfNeeded(userId, userData) {
-        const alertsRef = collection(db, "alerts");
-        
-        const q = query(
-            alertsRef, 
-            where("userId", "==", userId), 
-            where("status", "==", "Active")
-        );
-        
-        const existingAlerts = await getDocs(q);
-
-        if (existingAlerts.empty) {
-            console.log(`Generating new SOS Alert for ${userData.fullName || userId}...`);
-            
-            try {
-                await addDoc(alertsRef, {
-                    userId: userId,
-                    userName: userData.fullName || "Unknown User",
-                    mobile: userData.mobile || "N/A",
-                    type: "SOS - Emergency", 
-                    status: "Active",
-                    timestamp: serverTimestamp(),
-                    location: {
-                        lat: userData.lat || 0,
-                        lng: userData.lng || 0
-                    }
-                });
-                console.log("Alert generated successfully.");
-            } catch (error) {
-                console.error("Error generating alert:", error);
-            }
-        }
-    }
-
-    async function deleteAlert(userId, userData){
-        const alertsRef = collection(db, "alerts");
-        const q = query(
-            alertsRef, 
-            where("userId", "==", userId), 
-            where("status", "==", "Active")
-        );
-        const existingAlerts = await getDocs(q);
-        
-        if(!existingAlerts.empty){
-            console.log(`Deleting active alerts for ${userData.fullName || userId}...`);
-            try {
-                // FIX 2: Loop through the snapshot to delete specific document references
-                existingAlerts.forEach(async (docSnapshot) => {
-                    await deleteDoc(docSnapshot.ref);
-                });
-                console.log("Alerts successfully cleared.");
-            } catch(error) {
-                console.error("Error deleting alert:", error);
-            }
-        }
-    }
-
-    // ======================================================
-    // PART 2: DISPLAY THE ALERTS
-    // ======================================================
-
-    const alertsQuery = query(collection(db, "alerts"), orderBy("timestamp", "desc"));
-
-    onSnapshot(alertsQuery, (snapshot) => {
-        tableBody.innerHTML = ""; 
-
-        if (!snapshot.empty) {
-            snapshot.forEach((doc) => {
-                const alertData = doc.data();
-                
-                let dateStr = "Just Now";
-                // Safety check to ensure the timestamp has resolved from the server
-                if (alertData.timestamp && alertData.timestamp.toDate) {
-                    const date = alertData.timestamp.toDate();
-                    dateStr = date.toLocaleString('en-IN', { 
-                        day: '2-digit', month: 'short', 
-                        hour: '2-digit', minute: '2-digit' 
-                    });
-                }
-
-                let badgeClass = "badge-safe";
-                let icon = "";
-                const type = alertData.type || "Unknown";
-                
-                if (type.toLowerCase().includes("sos")) {
-                    badgeClass = "badge-sos";
-                    icon = '<i class="fa-solid fa-bell" style="margin-right:5px;"></i>';
-                } else if (type.toLowerCase().includes("geofence")) {
-                    badgeClass = "badge-geo";
-                    icon = '<i class="fa-solid fa-location-dot" style="margin-right:5px;"></i>';
-                }
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${dateStr}</td>
-                    <td>
-                        <span class="badge ${badgeClass}">
-                            ${icon} ${type}
-                        </span>
-                    </td>
-                    <td><strong>${alertData.userName || 'Unknown'}</strong></td>
-                    <td>${alertData.mobile || 'N/A'}</td>
-                    <td style="font-weight:bold; color: ${alertData.status === 'Active' ? '#dc2626' : '#16a34a'}">
-                        ${alertData.status || 'Active'}
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
-        } else {
-            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No alerts found.</td></tr>';
-        }
-    });
-</script>
+    </script>
 </body>
 </html>
-
-
-
-
