@@ -13,7 +13,7 @@
             --sidebar-hover: #1f2937;
             --accent-blue: #3b82f6;
             --bg-body: #f3f4f6;
-            --glass-white: rgba(255, 255, 255, 0.9);
+            --glass-white: rgba(255, 255, 255, 0.95);
             --border-color: #e5e7eb;
             --sidebar-width: 260px;
         }
@@ -28,7 +28,7 @@
             overflow-x: hidden;
         }
 
-        /* --- SIDEBAR WITH GLOW EFFECTS --- */
+        /* --- SIDEBAR --- */
         .sidebar {
             width: var(--sidebar-width);
             background-color: var(--sidebar-bg);
@@ -57,14 +57,13 @@
             padding: 14px 24px;
             color: #9ca3af;
             text-decoration: none;
-            transition: all 0.2s ease-in-out;
+            transition: all 0.2s ease;
             margin: 4px 16px;
             border-radius: 8px;
             font-size: 0.9rem;
             font-weight: 500;
         }
 
-        /* Blue Glow + Gradient from your screenshot */
         .sidebar-nav a:hover, .sidebar-nav a.active {
             color: #fff;
             background-color: var(--sidebar-hover);
@@ -77,7 +76,7 @@
 
         .sidebar-nav i { width: 28px; font-size: 1.1rem; }
 
-        /* --- MAIN LAYOUT FIX --- */
+        /* --- MAIN LAYOUT --- */
         .main-content {
             margin-left: var(--sidebar-width);
             flex: 1;
@@ -89,7 +88,7 @@
         .header {
             background: var(--glass-white);
             backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px); /* Safari Support */
+            -webkit-backdrop-filter: blur(12px);
             padding: 1.2rem 2.5rem;
             display: flex;
             justify-content: space-between;
@@ -102,7 +101,6 @@
 
         .header h1 { font-size: 1.4rem; font-weight: 600; color: #111827; }
 
-        /* Container that prevents the "Stretched" look */
         .content-container {
             padding: 2.5rem;
             max-width: 1600px; 
@@ -142,7 +140,6 @@
             color: #374151;
         }
 
-        /* Badge Styling from screenshot */
         .badge-sos {
             background: #fee2e2;
             color: #dc2626;
@@ -163,17 +160,17 @@
             text-decoration: none;
             font-size: 0.85rem;
             font-weight: 600;
-            transition: transform 0.1s;
             display: inline-flex;
             align-items: center;
             gap: 6px;
         }
 
-        .track-btn:hover { background: #2563eb; transform: translateY(-1px); }
+        .track-btn:hover { background: #2563eb; }
 
         .user-profile { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; }
         .user-profile i { font-size: 1.6rem; color: #4b5563; }
 
+        .status-loading { padding: 4rem; text-align: center; color: #6b7280; }
     </style>
 </head>
 <body>
@@ -216,12 +213,9 @@
                     </thead>
                     <tbody id="tableBody">
                         <tr>
-                            <td>05 Mar, 07:32 pm</td>
-                            <td><span class="badge-sos"><i class="fa-solid fa-triangle-exclamation"></i> SOS - EMERGENCY</span></td>
-                            <td><strong>PAPPU</strong></td>
-                            <td>1234567890</td>
-                            <td style="color: #dc2626; font-weight: 700;">Active</td>
-                            <td><a href="#" class="track-btn"><i class="fa-solid fa-location-crosshairs"></i> Locate</a></td>
+                            <td colspan="6" class="status-loading">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Fetching records...
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -229,5 +223,95 @@
         </div>
     </main>
 
-    </body>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { 
+            getFirestore, collection, onSnapshot, query, orderBy, where, getDocs, addDoc, serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
+            authDomain: "tour-track-ddb18.firebaseapp.com",
+            projectId: "tour-track-ddb18",
+            storageBucket: "tour-track-ddb18.firebasestorage.app",
+            messagingSenderId: "426865781508",
+            appId: "1:426865781508:web:8fb7a409f00c536955be51",
+            measurementId: "G-TQZT1H6PPS"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const tableBody = document.getElementById('tableBody');
+
+        // 1. Monitor users to add to history (Permanently)
+        onSnapshot(collection(db, "users"), (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === "added" || change.type === "modified") {
+                    const userData = change.doc.data();
+                    const userId = change.doc.id;
+
+                    if (userData.sos === true || String(userData.sos).toLowerCase() === "true") {
+                        await createAlertIfNeeded(userId, userData);
+                    }
+                }
+            });
+        });
+
+        async function createAlertIfNeeded(userId, userData) {
+            const alertsRef = collection(db, "alerts");
+            // Check for existing active alert for this specific user to avoid duplicates
+            const q = query(alertsRef, where("userId", "==", userId), where("status", "==", "Active"));
+            const existingAlerts = await getDocs(q);
+
+            if (existingAlerts.empty) {
+                try {
+                    await addDoc(alertsRef, {
+                        userId: userId,
+                        userName: userData.fullName || "Unknown User",
+                        mobile: userData.mobile || "N/A",
+                        type: "SOS - Emergency", 
+                        status: "Active",
+                        timestamp: serverTimestamp(),
+                        location: { lat: userData.lat || 0, lng: userData.lng || 0 }
+                    });
+                } catch (error) {
+                    console.error("Error logging history:", error);
+                }
+            }
+        }
+
+        // 2. Display History (Sorted by newest first)
+        const alertsQuery = query(collection(db, "alerts"), orderBy("timestamp", "desc"));
+
+        onSnapshot(alertsQuery, (snapshot) => {
+            tableBody.innerHTML = ""; 
+            if (!snapshot.empty) {
+                snapshot.forEach((doc) => {
+                    const alertData = doc.data();
+                    let dateStr = "Just Now";
+                    if (alertData.timestamp?.toDate) {
+                        dateStr = alertData.timestamp.toDate().toLocaleString('en-IN', { 
+                            day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
+                        });
+                    }
+
+                    const trackUrl = `homepage.html?trackLat=${alertData.location?.lat}&trackLng=${alertData.location?.lng}&focusUser=${alertData.userId}`;
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="white-space: nowrap;">${dateStr}</td>
+                        <td><span class="badge-sos"><i class="fa-solid fa-triangle-exclamation"></i> SOS - EMERGENCY</span></td>
+                        <td><strong>${alertData.userName}</strong></td>
+                        <td>${alertData.mobile}</td>
+                        <td style="color: #dc2626; font-weight: 700;">Active</td>
+                        <td><a href="${trackUrl}" class="track-btn"><i class="fa-solid fa-location-crosshairs"></i> Locate</a></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:3rem;">No history found.</td></tr>';
+            }
+        });
+    </script>
+</body>
 </html>
