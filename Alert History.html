@@ -3,6 +3,323 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alert History - Safety Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #f9fafb;
+            --sidebar-bg: #111827; /* Deep Navy from screenshot */
+            --sidebar-hover: #1f2937;
+            --accent-blue: #3b82f6;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --glass-white: rgba(255, 255, 255, 0.9);
+            --border-subtle: #e5e7eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* --- SHARED SIDEBAR STYLES --- */
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .sidebar-nav { list-style: none; flex-grow: 1; }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 0.85rem 1.5rem;
+            color: #9ca3af;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin: 4px 12px;
+            border-radius: 8px;
+        }
+
+        .sidebar-nav a i { width: 24px; font-size: 1.1rem; }
+
+        /* Hover & Active Effects */
+        .sidebar-nav a:hover {
+            background-color: var(--sidebar-hover);
+            color: #fff;
+        }
+
+        .sidebar-nav a.active {
+            background-color: var(--sidebar-hover);
+            color: #fff;
+            box-shadow: inset 4px 0 0 var(--accent-blue); /* Left indicator effect */
+        }
+
+        /* --- MAIN CONTENT AREA --- */
+        .main-content {
+            margin-left: 260px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--glass-white);
+            backdrop-filter: blur(8px);
+            padding: 1rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .header h1 { font-size: 1.5rem; font-weight: 600; color: var(--text-main); }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .user-profile i { font-size: 1.5rem; color: #4b5563; }
+
+        .content-container { padding: 2rem 2.5rem; }
+
+        /* --- TABLE STYLING --- */
+        .card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .history-table th {
+            background-color: #f9fafb;
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .history-table td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 0.9rem;
+        }
+
+        .history-table tr:last-child td { border-bottom: none; }
+
+        /* --- BADGES & BUTTONS --- */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .badge-sos { background: #fee2e2; color: #dc2626; }
+        .badge-geo { background: #ffedd5; color: #ea580c; }
+
+        .track-btn {
+            background: var(--accent-blue);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .track-btn:hover { opacity: 0.9; }
+
+        .status-loading { padding: 4rem; text-align: center; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <i class="fa-solid fa-shield-halved" style="color: var(--accent-blue);"></i>
+            <span>Safety Hub</span>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="homepage.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
+            <li><a href="#" class="active"><i class="fa-solid fa-clock-rotate-left"></i> Alert History</a></li>
+            <li><a href="TouristID.html"><i class="fa-solid fa-id-card"></i> Tourist IDs</a></li>
+            <li><a href="ZoneManagement.html"><i class="fa-solid fa-map-location-dot"></i> Zone Management</a></li>
+            <li><a href="Reports.html"><i class="fa-solid fa-chart-pie"></i> Reports</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <h1>Alert History</h1>
+            <div class="user-profile">
+                <span>Welcome, <strong>Admin</strong></span>
+                <i class="fa-solid fa-circle-user"></i>
+            </div>
+        </header>
+        
+        <div class="content-container">
+            <div class="card">
+                <table class="history-table" id="alertTable">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Alert Type</th>
+                            <th>User Name</th>
+                            <th>Contact</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="6" class="status-loading">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Fetching records...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { 
+            getFirestore, collection, onSnapshot, query, orderBy, where, getDocs, addDoc, serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
+            authDomain: "tour-track-ddb18.firebaseapp.com",
+            projectId: "tour-track-ddb18",
+            storageBucket: "tour-track-ddb18.firebasestorage.app",
+            messagingSenderId: "426865781508",
+            appId: "1:426865781508:web:8fb7a409f00c536955be51",
+            measurementId: "G-TQZT1H6PPS"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const tableBody = document.getElementById('tableBody');
+
+        // Logic: Monitor users but REMOVED dynamic deletion to preserve history
+        onSnapshot(collection(db, "users"), (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === "added" || change.type === "modified") {
+                    const userData = change.doc.data();
+                    const userId = change.doc.id;
+                    if (userData.sos === true || String(userData.sos).toLowerCase() === "true") {
+                        await createAlertIfNeeded(userId, userData);
+                    }
+                    // deleteAlert logic removed here to keep history permanent
+                }
+            });
+        });
+
+        async function createAlertIfNeeded(userId, userData) {
+            const alertsRef = collection(db, "alerts");
+            const q = query(alertsRef, where("userId", "==", userId), where("status", "==", "Active"));
+            const existingAlerts = await getDocs(q);
+
+            if (existingAlerts.empty) {
+                try {
+                    await addDoc(alertsRef, {
+                        userId: userId,
+                        userName: userData.fullName || "Unknown User",
+                        mobile: userData.mobile || "N/A",
+                        type: "SOS - Emergency", 
+                        status: "Active",
+                        timestamp: serverTimestamp(),
+                        location: { lat: userData.lat || 0, lng: userData.lng || 0 }
+                    });
+                } catch (error) { console.error("Error generating alert:", error); }
+            }
+        }
+
+        // Display alerts
+        const alertsQuery = query(collection(db, "alerts"), orderBy("timestamp", "desc"));
+        onSnapshot(alertsQuery, (snapshot) => {
+            tableBody.innerHTML = ""; 
+            if (!snapshot.empty) {
+                snapshot.forEach((doc) => {
+                    const alertData = doc.data();
+                    let dateStr = "Just Now";
+                    if (alertData.timestamp?.toDate) {
+                        dateStr = alertData.timestamp.toDate().toLocaleString('en-IN', { 
+                            day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
+                        });
+                    }
+
+                    const badgeClass = alertData.type?.toLowerCase().includes("sos") ? "badge-sos" : "badge-geo";
+                    const trackUrl = `homepage.html?trackLat=${alertData.location?.lat}&trackLng=${alertData.location?.lng}&focusUser=${alertData.userId}`;
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${dateStr}</td>
+                        <td><span class="badge ${badgeClass}">${alertData.type}</span></td>
+                        <td><strong>${alertData.userName}</strong></td>
+                        <td>${alertData.mobile}</td>
+                        <td style="color: ${alertData.status === 'Active' ? '#dc2626' : '#16a34a'}; font-weight: 600;">
+                            ${alertData.status}
+                        </td>
+                        <td><a href="${trackUrl}" class="track-btn">Locate</a></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 3rem;">No history found.</td></tr>';
+            }
+        });
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alert History - Command Center</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -1264,6 +1581,7 @@
     </script>
 </body>
 </html>
+
 
 
 
