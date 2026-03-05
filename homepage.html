@@ -135,182 +135,206 @@
             </div>
         </div>
     </main>
+
     <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
-        authDomain: "tour-track-ddb18.firebaseapp.com",
-        projectId: "tour-track-ddb18",
-        storageBucket: "tour-track-ddb18.firebasestorage.app",
-        messagingSenderId: "426865781508",
-        appId: "1:426865781508:web:8fb7a409f00c536955be51"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const RADAR_PK = 'prj_live_pk_ed91d1d636ae3f3366727a2c648ba6a976e29d40';
-    const RADAR_SK = 'prj_live_sk_2f8e1e138dd5fcf9dbb5c3537ffb75b93c083021';
-    
-    Radar.initialize(RADAR_PK);
-    const maplibregl = Radar.ui.maplibregl;
-
-    const touristMarkers = {};
-    const userPreviousState = {}; 
-    const geofenceTimers = {}; 
-    let loadedGeofences = [];
-    let alertCounter = 0;
-
-    const map = Radar.ui.map({
-        container: 'map-container',
-        style: 'radar-default-v1',
-        center: [72.978088, 19.218331],
-        zoom: 13
-    });
-
-    function pushToLog(type, message, id) {
-        const feed = document.getElementById('alerts-feed');
-        if(feed.querySelector('div[style*="text-align:center"]')) feed.innerHTML = '';
-        const config = {
-            sos: { icon: 'fa-triangle-exclamation', color: '#dc2626' },
-            entry: { icon: 'fa-door-open', color: '#ea580c' },
-            exit: { icon: 'fa-door-closed', color: '#10b981' },
-            join: { icon: 'fa-user-plus', color: '#3b82f6' },
-            leave: { icon: 'fa-user-minus', color: '#6b7280' }
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
+            authDomain: "tour-track-ddb18.firebaseapp.com",
+            projectId: "tour-track-ddb18",
+            storageBucket: "tour-track-ddb18.firebasestorage.app",
+            messagingSenderId: "426865781508",
+            appId: "1:426865781508:web:8fb7a409f00c536955be51"
         };
-        const theme = config[type] || config.join;
-        const html = `<div class="alert-item"><i class="fa-solid ${theme.icon}" style="color: ${theme.color}"></i><div class="alert-details"><p>${message}</p><span>ID: ${id.substring(0,8)}... • ${new Date().toLocaleTimeString()}</span></div></div>`;
-        feed.insertAdjacentHTML('afterbegin', html);
-        if(feed.children.length > 15) feed.lastElementChild.remove();
-    }
 
-    function isPointInPolygon(point, vs) {
-        if (!vs || !Array.isArray(vs)) return false;
-        const polygon = Array.isArray(vs[0][0]) ? vs[0] : vs; 
-        let x = point[0], y = point[1], inside = false;
-        for (var i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            let xi = polygon[i][0], yi = polygon[i][1];
-            let xj = polygon[j][0], yj = polygon[j][1];
-            let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-            if (intersect) inside = !inside;
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const RADAR_PK = 'prj_live_pk_ed91d1d636ae3f3366727a2c648ba6a976e29d40';
+        const RADAR_SK = 'prj_live_sk_2f8e1e138dd5fcf9dbb5c3537ffb75b93c083021';
+        
+        Radar.initialize(RADAR_PK);
+        const maplibregl = Radar.ui.maplibregl;
+
+        const touristMarkers = {};
+        const userPreviousState = {}; 
+        const geofenceTimers = {}; 
+        let loadedGeofences = [];
+        let alertCounter = 0;
+
+        const map = Radar.ui.map({
+            container: 'map-container',
+            style: 'radar-default-v1',
+            center: [72.978088, 19.218331],
+            zoom: 13
+        });
+
+        // --- 1. SYSTEM LOGGING ---
+        function pushToLog(type, message, id) {
+            const feed = document.getElementById('alerts-feed');
+            if(feed.querySelector('div[style*="text-align:center"]')) feed.innerHTML = '';
+
+            const config = {
+                sos: { icon: 'fa-triangle-exclamation', color: '#dc2626' },
+                entry: { icon: 'fa-door-open', color: '#ea580c' },
+                exit: { icon: 'fa-door-closed', color: '#10b981' },
+                join: { icon: 'fa-user-plus', color: '#3b82f6' },
+                leave: { icon: 'fa-user-minus', color: '#6b7280' }
+            };
+
+            const theme = config[type] || config.join;
+            const html = `
+                <div class="alert-item">
+                    <i class="fa-solid ${theme.icon}" style="color: ${theme.color}"></i>
+                    <div class="alert-details">
+                        <p>${message}</p>
+                        <span>ID: ${id.substring(0,8)}... • ${new Date().toLocaleTimeString()}</span>
+                    </div>
+                </div>`;
+            
+            feed.insertAdjacentHTML('afterbegin', html);
+            if(feed.children.length > 15) feed.lastElementChild.remove();
         }
-        return inside;
-    }
 
-    async function startSystem() {
-        try {
-            const response = await fetch('https://api.radar.io/v1/geofences?tag=safety-zone&limit=100', {
-                headers: { 'Authorization': RADAR_SK }
-            });
-            const data = await response.json();
-            loadedGeofences = data.geofences || [];
-            document.getElementById('HRisk').innerText = loadedGeofences.length;
+        // --- 2. GEOFENCE UTILITIES ---
+        function isPointInPolygon(point, vs) {
+            if (!vs || !Array.isArray(vs)) return false;
+            const polygon = Array.isArray(vs[0][0]) ? vs[0] : vs; 
+            let x = point[0], y = point[1], inside = false;
+            for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+                let xi = polygon[i][0], yi = polygon[i][1];
+                let xj = polygon[j][0], yj = polygon[j][1];
+                let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
 
-            map.on('load', () => {
-                loadedGeofences.forEach(fence => {
-                    const sourceId = `source-${fence._id}`;
-                    map.addSource(sourceId, { type: 'geojson', data: { type: 'Feature', geometry: fence.geometry } });
-                    map.addLayer({
-                        id: `layer-${fence._id}`, type: 'fill', source: sourceId,
-                        paint: { 'fill-color': '#3b82f6', 'fill-opacity': 0.15, 'fill-outline-color': '#111827' }
-                    });
+        async function triggerAutoSOS(userId, zoneName) {
+            try {
+                await updateDoc(doc(db, "users", userId), { 
+                    sos: true, autoSOS: true, sosReason: `Left assigned zone: ${zoneName}`
                 });
-                console.log("✅ Radar Sync Complete. Active Geofences:", loadedGeofences.map(f => f.externalId));
-                initFirebaseListener();
-            });
-        } catch (e) { console.error("Boot Error:", e); }
-    }
+                pushToLog('sos', `AUTO-SOS: Boundary Breach (${zoneName})`, userId);
+            } catch (e) { console.error("AutoSOS failed:", e); }
+        }
 
-    function initFirebaseListener() {
-        onSnapshot(collection(db, "users"), (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-                const data = change.doc.data();
-                const id = change.doc.id;
+        // --- 3. SYSTEM BOOTSTRAP ---
+        async function startSystem() {
+            try {
+                const response = await fetch('https://api.radar.io/v1/geofences?tag=safety-zone&limit=100', {
+                    headers: { 'Authorization': RADAR_SK }
+                });
+                const data = await response.json();
+                loadedGeofences = data.geofences || [];
+                document.getElementById('HRisk').innerText = loadedGeofences.length;
 
-                if (typeof data.lat === 'number' && typeof data.lng === 'number') {
-                    const lng = data.lng, lat = data.lat;
-                    const isSos = data.sos === true || String(data.sos).toLowerCase() === "true";
-                    const prevState = userPreviousState[id] || { sos: false, insideZones: [] };
-
-                    // --- START DIAGNOSTIC GROUP ---
-                    console.group(`Tracker: ${id.substring(0,8)}`);
-                    
-                    // 1. General Entry/Exit Logs
-                    const currentZones = loadedGeofences.filter(f => isPointInPolygon([lng, lat], f.geometry.coordinates));
-                    currentZones.forEach(z => {
-                        if (!prevState.insideZones.find(pz => pz._id === z._id)) pushToLog('entry', `Entered: ${z.description}`, id);
+                map.on('load', () => {
+                    loadedGeofences.forEach(fence => {
+                        const sourceId = `source-${fence._id}`;
+                        map.addSource(sourceId, { type: 'geojson', data: { type: 'Feature', geometry: fence.geometry } });
+                        map.addLayer({
+                            id: `layer-${fence._id}`, type: 'fill', source: sourceId,
+                            paint: { 'fill-color': '#f59e0b', 'fill-opacity': 0.2, 'fill-outline-color': '#111827' }
+                        });
                     });
-                    prevState.insideZones.forEach(z => {
-                        if (!currentZones.find(cz => cz._id === z._id)) pushToLog('exit', `Exited: ${z.description}`, id);
-                    });
+                    initFirebaseListener();
+                });
+            } catch (e) { console.error(e); }
+        }
 
-                    // 2. THE CRITICAL SAFETY WATCHER
-                    if (data.geofenceassign) {
-                        const assigned = loadedGeofences.find(f => f.externalId === data.geofenceassign);
-                        if (assigned) {
-                            const isInside = isPointInPolygon([lng, lat], assigned.geometry.coordinates);
-                            console.log(`Checking Assigned Zone (${assigned.externalId}): ${isInside ? "INSIDE" : "OUTSIDE"}`);
+        // --- 4. LIVE LISTENER ---
+        function initFirebaseListener() {
+            onSnapshot(collection(db, "users"), (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data();
+                    const id = change.doc.id;
 
-                            if (!isInside && !isSos) {
-                                if (!geofenceTimers[id]) {
-                                    console.warn(`⚠️ STARTING 30s TIMER FOR ${id}`);
-                                    geofenceTimers[id] = setTimeout(async () => {
-                                        console.error(`🚨 TIMER EXPIRED! Triggering SOS for ${id}`);
-                                        await updateDoc(doc(db, "users", id), { 
-                                            sos: true, autoSOS: true, sosReason: `Out of zone: ${assigned.description}` 
-                                        });
-                                        pushToLog('sos', `AUTO-SOS: ${assigned.description} breached`, id);
-                                        delete geofenceTimers[id];
-                                    }, 30000);
-                                }
-                            } else {
-                                if (geofenceTimers[id]) {
-                                    console.log(`✅ User returned/triggered SOS. Clearing timer.`);
+                    if (typeof data.lat === 'number' && typeof data.lng === 'number') {
+                        const lng = data.lng, lat = data.lat;
+                        const isSos = data.sos === true || String(data.sos).toLowerCase() === "true";
+                        const prevState = userPreviousState[id] || { sos: false, insideZones: [] };
+
+                        // Detect Entry/Exit for general log
+                        const currentZones = loadedGeofences.filter(f => isPointInPolygon([lng, lat], f.geometry.coordinates));
+                        currentZones.forEach(z => {
+                            if (!prevState.insideZones.find(pz => pz._id === z._id)) pushToLog('entry', `Entered: ${z.description}`, id);
+                        });
+                        prevState.insideZones.forEach(z => {
+                            if (!currentZones.find(cz => cz._id === z._id)) pushToLog('exit', `Exited: ${z.description}`, id);
+                        });
+
+                        // Safety Watcher for Assigned Zone
+                        if (data.geofenceassign) {
+                            const assigned = loadedGeofences.find(f => f.externalId === data.geofenceassign);
+                            if (assigned) {
+                                const isInside = isPointInPolygon([lng, lat], assigned.geometry.coordinates);
+                                if (!isInside && !isSos) {
+                                    if (!geofenceTimers[id]) {
+                                        console.warn(`Countdown started for ${id}`);
+                                        geofenceTimers[id] = setTimeout(() => triggerAutoSOS(id, assigned.description), 30000);
+                                    }
+                                } else if (geofenceTimers[id]) {
                                     clearTimeout(geofenceTimers[id]);
                                     delete geofenceTimers[id];
                                 }
                             }
-                        } else {
-                            console.error(`❌ User assigned ID "${data.geofenceassign}" but it doesn't exist in loadedGeofences.`);
                         }
+
+                        // SOS Activation Event
+                        if (change.type === "added") {
+                            pushToLog('join', 'Tourist Online', id);
+                        } else if (isSos && !prevState.sos) {
+                            pushToLog('sos', 'CRITICAL: SOS Active', id);
+                            alertCounter++;
+                            document.getElementById("alert-count-display").innerText = alertCounter;
+                            map.flyTo({ center: [lng, lat], zoom: 15 });
+                        }
+
+                        // Marker Update
+                        if (touristMarkers[id]) {
+                            touristMarkers[id].setLngLat([lng, lat]);
+                            touristMarkers[id].getElement().style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
+                        } else {
+                            const el = document.createElement('div');
+                            el.className = 'marker-pulse';
+                            el.style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
+                            el.style.width = '15px'; el.style.height = '15px';
+                            el.style.borderRadius = '50%'; el.style.border = '2px solid white';
+                            touristMarkers[id] = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
+                        }
+
+                        userPreviousState[id] = { sos: isSos, insideZones: currentZones };
                     }
 
-                    // 3. Status Transitions
-                    if (change.type === "added") pushToLog('join', 'Tourist Online', id);
-                    if (isSos && !prevState.sos) {
-                        pushToLog('sos', 'CRITICAL: SOS Active', id);
-                        alertCounter++;
-                        document.getElementById("alert-count-display").innerText = alertCounter;
-                        map.flyTo({ center: [lng, lat], zoom: 15 });
+                    if (change.type === "removed") {
+                        if (touristMarkers[id]) touristMarkers[id].remove();
+                        delete touristMarkers[id];
+                        delete userPreviousState[id];
+                        if (geofenceTimers[id]) clearTimeout(geofenceTimers[id]);
+                        pushToLog('leave', 'Tourist Offline', id);
                     }
+                });
+                document.getElementById("activetcount").innerText = Object.keys(touristMarkers).length;
+            });
+        }
 
-                    // 4. Update Marker
-                    if (touristMarkers[id]) {
-                        touristMarkers[id].setLngLat([lng, lat]);
-                        touristMarkers[id].getElement().style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
-                    } else {
-                        const el = document.createElement('div');
-                        el.className = 'marker-pulse';
-                        el.style.backgroundColor = isSos ? '#ef4444' : '#3b82f6';
-                        el.style.width = '15px'; el.style.height = '15px';
-                        el.style.borderRadius = '50%'; el.style.border = '2px solid white';
-                        touristMarkers[id] = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map);
-                    }
-
-                    userPreviousState[id] = { sos: isSos, insideZones: currentZones };
-                    console.groupEnd();
+        // --- 5. SEARCH ---
+        window.searchTourist = function() {
+            const val = document.getElementById('dashboard-search').value.toLowerCase();
+            Object.keys(touristMarkers).forEach(id => {
+                const markerElement = touristMarkers[id].getElement();
+                if (id.toLowerCase().includes(val)) {
+                    markerElement.style.display = "block";
+                    if (val.length > 5) map.flyTo({ center: touristMarkers[id].getLngLat(), zoom: 15 });
+                } else {
+                    markerElement.style.display = "none";
                 }
             });
-            document.getElementById("activetcount").innerText = Object.keys(touristMarkers).length;
-        });
-    }
+        };
 
-    window.searchTourist = function() {
-        const val = document.getElementById('dashboard-search').value.toLowerCase();
-        Object.keys(touristMarkers).forEach(id => {
-            const markerElement = touristMarkers[id].getElement();
-            if (id.toLowerCase().includes(val))
+        startSystem();
+    </script>
 </body>
 </html>
-
