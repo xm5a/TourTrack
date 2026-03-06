@@ -213,7 +213,7 @@
 
         async function triggerAutoSOS(userId, zoneName) {
             try {
-                await updateDoc(doc(db, "users", userId), { 
+                await updateDoc(doc(db, "user_locations", userId), { 
                     sos: true, autoSOS: true, sosReason: `Left assigned zone: ${zoneName}`
                 });
                 pushToLog('sos', `AUTO-SOS: Boundary Breach (${zoneName})`, userId);
@@ -246,18 +246,18 @@
 
         // --- 4. LIVE LISTENER ---
         function initFirebaseListener() {
-            onSnapshot(collection(db, "users"), (snapshot) => {
+            onSnapshot(collection(db, "users_locations"), (snapshot) => {
                 snapshot.docChanges().forEach((change) => {
                     const data = change.doc.data();
                     const id = change.doc.id;
 
-                    if (typeof data.lat === 'number' && typeof data.lng === 'number') {
-                        const lng = data.lng, lat = data.lat;
+                    if (typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+                        const lng = data.longitude, lat = data.latitude;
                         const isSos = data.sos === true || String(data.sos).toLowerCase() === "true";
                         const prevState = userPreviousState[id] || { sos: false, insideZones: [] };
 
                         // Detect Entry/Exit for general log
-                        const currentZones = loadedGeofences.filter(f => isPointInPolygon([lng, lat], f.geometry.coordinates));
+                        const currentZones = loadedGeofences.filter(f => isPointInPolygon([longitude, latitude], f.geometry.coordinates));
                         currentZones.forEach(z => {
                             if (!prevState.insideZones.find(pz => pz._id === z._id)) pushToLog('entry', `Entered: ${z.description}`, id);
                         });
@@ -269,7 +269,7 @@
                         if (data.geofenceassign) {
                             const assigned = loadedGeofences.find(f => f.externalId === data.geofenceassign);
                             if (assigned) {
-                                const isInside = isPointInPolygon([lng, lat], assigned.geometry.coordinates);
+                                const isInside = isPointInPolygon([longitude, latitude], assigned.geometry.coordinates);
                                 if (!isInside && !isSos) {
                                     if (!geofenceTimers[id]) {
                                         console.warn(`Countdown started for ${id}`);
@@ -338,3 +338,4 @@
     </script>
 </body>
 </html>
+
