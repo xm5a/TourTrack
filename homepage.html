@@ -257,7 +257,7 @@
                         const prevState = userPreviousState[id] || { sos: false, insideZones: [] };
 
                         // Detect Entry/Exit for general log
-                        const currentZones = loadedGeofences.filter(f => isPointInPolygon([longitude, latitude], f.geometry.coordinates));
+                        const currentZones = loadedGeofences.filter(f => isPointInPolygon([lng, lat], f.geometry.coordinates));
                         currentZones.forEach(z => {
                             if (!prevState.insideZones.find(pz => pz._id === z._id)) pushToLog('entry', `Entered: ${z.description}`, id);
                         });
@@ -338,5 +338,6 @@
     </script>
 </body>
 </html>
+
 
 
