@@ -246,7 +246,7 @@
 
         // --- 4. LIVE LISTENER ---
         function initFirebaseListener() {
-            onSnapshot(collection(db, "users_locations"), (snapshot) => {
+            onSnapshot(collection(db, "user_locations"), (snapshot) => {
                 snapshot.docChanges().forEach((change) => {
                     const data = change.doc.data();
                     const id = change.doc.id;
@@ -338,4 +338,5 @@
     </script>
 </body>
 </html>
+
 
