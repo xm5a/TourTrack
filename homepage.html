@@ -158,13 +158,13 @@
     Radar.initialize(RADAR_PK);
     const maplibregl = Radar.ui.maplibregl;
 
-    const map = new maplibregl.Map({
+const map = new maplibregl.Map({
         container: 'map-container',
-        style: Radar.ui.getStylesUrl(true), // Uses Radar default light/dark style
-        center: [0, 0], // Initial center [lng, lat]
-        zoom: 1 // Initial zoom
+        // Use a direct string for the style instead of the helper function
+        style: 'https://api.radar.io/maps/styles/radar-default-v1?access_token=' + RADAR_PK,
+        center: [0, 0], 
+        zoom: 1
     });
-
     const touristMarkers = {};
     const userMetadataCache = {};
     const userPreviousState = {}; 
