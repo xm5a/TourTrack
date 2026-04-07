@@ -157,10 +157,12 @@
     const maplibregl = Radar.ui.maplibregl;
 
     // --- Ensure Map is Initialized ---
-    const map = new maplibregl.Map({
+// --- Ensure Map is Initialized ---
+    // Use Radar.ui.map instead of new maplibregl.Map to properly resolve the style string
+    const map = Radar.ui.map({
         container: 'map-container',
-        style: 'radar-default-v1',
-        center: [72.9781, 19.2183], // Defaulted to Thane/Mumbai area; adjust as needed
+        style: 'radar-default-v1', 
+        center: [72.9781, 19.2183], // Defaulted to Thane/Mumbai area
         zoom: 12
     });
 
