@@ -199,27 +199,28 @@
         const focusUser = params.get('focusUser');
         const trackLat = parseFloat(params.get('trackLat'));
         const trackLng = parseFloat(params.get('trackLng'));
-        const searchQuery = params.get('search'); // 🔴 NEW: Looks for ?search= in the URL
+        const searchQuery = params.get('search');
 
         // 1. AUTO-SEARCH FEATURE
         if (searchQuery) {
-            // Put the search term into the input box
             document.getElementById('dashboard-search').value = searchQuery;
-            
-            // Firebase takes a second to load markers. We check every 500ms until they exist, then search.
             const trySearch = setInterval(() => {
                 if (Object.keys(touristMarkers).length > 0) {
                     clearInterval(trySearch);
-                    window.searchTourist(); // Trigger your search function!
+                    window.searchTourist();
                 }
             }, 500);
         }
 
-        // 2. THE EMERGENCY "LOCATE" FLIGHT (Your existing code)
-        if (focusUser && !isNaN(trackLat) && !isNaN(trackLng) && trackLat !== 0) {
-            
-            // Optional: Also put the emergency user's ID into the search box so the Admin knows who they are looking at
+        // 2. THE EMERGENCY "LOCATE" FLIGHT
+        if (focusUser) {
             document.getElementById('dashboard-search').value = focusUser;
+
+            // 🔴 NEW: Tell the Admin if the GPS data is missing/invalid instead of just doing nothing
+            if (isNaN(trackLat) || isNaN(trackLng) || (trackLat === 0 && trackLng === 0)) {
+                alert("Cannot locate this user: This alert was saved without valid GPS coordinates (Location is 0,0).");
+                return; // Abort the flight
+            }
 
             const flyAndHighlight = () => {
                 setTimeout(() => {
@@ -251,7 +252,6 @@
             }
         }
     }
-
     function pushToLog(type, message, id) {
         const feed = document.getElementById('alerts-feed');
         if(feed.querySelector('div[style*="text-align:center"]')) feed.innerHTML = '';
