@@ -193,24 +193,62 @@
     const geofenceTimers = {};
     let loadedGeofences = [];
 
+// ---- URL PARAMS & AUTO-SEARCH HANDLER ----
     function handleLocateParams() {
         const params = new URLSearchParams(window.location.search);
         const focusUser = params.get('focusUser');
         const trackLat = parseFloat(params.get('trackLat'));
         const trackLng = parseFloat(params.get('trackLng'));
+        const searchQuery = params.get('search'); // 🔴 NEW: Looks for ?search= in the URL
 
-        if (focusUser && !isNaN(trackLat) && !isNaN(trackLng)) {
-            setTimeout(() => {
-                map.flyTo({ center: [trackLng, trackLat], zoom: 16 });
-                if (touristMarkers[focusUser]) {
-                    touristMarkers[focusUser].getElement().style.boxShadow = '0 0 24px 6px #dc2626';
-                    setTimeout(() => {
-                        if (touristMarkers[focusUser]) {
-                            touristMarkers[focusUser].getElement().style.boxShadow = '';
-                        }
-                    }, 5000);
+        // 1. AUTO-SEARCH FEATURE
+        if (searchQuery) {
+            // Put the search term into the input box
+            document.getElementById('dashboard-search').value = searchQuery;
+            
+            // Firebase takes a second to load markers. We check every 500ms until they exist, then search.
+            const trySearch = setInterval(() => {
+                if (Object.keys(touristMarkers).length > 0) {
+                    clearInterval(trySearch);
+                    window.searchTourist(); // Trigger your search function!
                 }
-            }, 1800);
+            }, 500);
+        }
+
+        // 2. THE EMERGENCY "LOCATE" FLIGHT (Your existing code)
+        if (focusUser && !isNaN(trackLat) && !isNaN(trackLng) && trackLat !== 0) {
+            
+            // Optional: Also put the emergency user's ID into the search box so the Admin knows who they are looking at
+            document.getElementById('dashboard-search').value = focusUser;
+
+            const flyAndHighlight = () => {
+                setTimeout(() => {
+                    map.flyTo({ center: [trackLng, trackLat], zoom: 16, speed: 1.2 });
+                    
+                    let attempts = 0;
+                    const checkMarker = setInterval(() => {
+                        attempts++;
+                        if (touristMarkers[focusUser]) {
+                            clearInterval(checkMarker); 
+                            
+                            touristMarkers[focusUser].getElement().style.boxShadow = '0 0 24px 6px #dc2626';
+                            setTimeout(() => {
+                                if (touristMarkers[focusUser]) {
+                                    touristMarkers[focusUser].getElement().style.boxShadow = '';
+                                }
+                            }, 5000);
+                        } else if (attempts > 20) {
+                            clearInterval(checkMarker); 
+                        }
+                    }, 500);
+                }, 1200); 
+            };
+
+            if (map.loaded()) {
+                flyAndHighlight();
+            } else {
+                map.once('load', flyAndHighlight);
+            }
         }
     }
 
