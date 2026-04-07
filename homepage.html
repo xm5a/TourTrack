@@ -160,10 +160,32 @@
 
 const map = new maplibregl.Map({
         container: 'map-container',
-        // Use a direct string for the style instead of the helper function
-        style: 'https://api.radar.io/maps/styles/radar-default-v1?access_token=' + RADAR_PK,
-        center: [0, 0], 
-        zoom: 1
+        style: {
+            "version": 8,
+            "sources": {
+                "osm": {
+                    "type": "raster",
+                    "tiles": [
+                        "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        "https://b.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        "https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    ],
+                    "tileSize": 256,
+                    "attribution": "&copy; OpenStreetMap Contributors"
+                }
+            },
+            "layers": [
+                {
+                    "id": "osm",
+                    "type": "raster",
+                    "source": "osm",
+                    "minzoom": 0,
+                    "maxzoom": 19
+                }
+            ]
+        },
+        center: [0, 0], // Update this to the coordinates of your default location [lng, lat]
+        zoom: 2 // Adjust zoom level as needed
     });
     const touristMarkers = {};
     const userMetadataCache = {};
