@@ -135,6 +135,8 @@
             </div>
         </div>
     </main>
+<!-- The rest of your file is unchanged, see below for modifications -->
+...
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
     import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
@@ -156,24 +158,13 @@
     Radar.initialize(RADAR_PK);
     const maplibregl = Radar.ui.maplibregl;
 
-    // --- Ensure Map is Initialized ---
-// --- Ensure Map is Initialized ---
-    // Use Radar.ui.map instead of new maplibregl.Map to properly resolve the style string
-// --- Ensure Map is Initialized ---
-    const map = new maplibregl.Map({
-        container: 'map-container',
-        // USE THE FULL URL HERE to prevent the GitHub Pages 404 error
-        style: 'https://api.radar.io/maps/styles/radar-default-v1', 
-        center: [72.9781, 19.2183], 
-        zoom: 12
-    });
-
     const touristMarkers = {};
     const userMetadataCache = {};
     const userPreviousState = {}; 
     const geofenceTimers = {};
     let loadedGeofences = [];
 
+    // ------------ NEW CODE: Active SOS tracking -----------
     const activeSosUsers = new Set();
 
     // ---- URL PARAMS HANDLER ----
@@ -194,11 +185,11 @@
                         }
                     }, 5000);
                 }
-            }, 1800); 
+            }, 1800); // This allows time for markers to load
         }
     }
 
-    // ------------- SYSTEM LOGGING -------------
+    // ------------- SYSTEM LOGGING (unchanged, just moved up) -------------
     function pushToLog(type, message, id) {
         const feed = document.getElementById('alerts-feed');
         if(feed.querySelector('div[style*="text-align:center"]')) feed.innerHTML = '';
@@ -216,6 +207,7 @@
     }
 
     // ------------- SAFETY & LOCATION SYSTEM -------------
+
     function isPointInPolygon(point, vs) {
         if (!vs || !Array.isArray(vs)) return false;
         const polygon = Array.isArray(vs[0][0]) ? vs[0] : vs; 
@@ -228,28 +220,9 @@
         return inside;
     }
 
-    // --- NEW: Unified Cleanup Function to prevent ghost markers and timer leaks ---
-    function removeTourist(id) {
-        if (touristMarkers[id]) {
-            touristMarkers[id].remove();
-            delete touristMarkers[id];
-            pushToLog('leave', 'Tourist Offline', id);
-        }
-        if (geofenceTimers[id]) {
-            clearTimeout(geofenceTimers[id]);
-            delete geofenceTimers[id];
-        }
-        if (userPreviousState[id]) delete userPreviousState[id];
-        
-        activeSosUsers.delete(id);
-        
-        // Ensure counters update instantly
-        document.getElementById("alert-count-display").innerText = activeSosUsers.size;
-        document.getElementById("activetcount").innerText = Object.keys(touristMarkers).length;
-    }
-
     async function startSystem() {
         try {
+            // Fetch Geofences
             const response = await fetch('https://api.radar.io/v1/geofences?tag=safety-zone&limit=100', {
                 headers: { 'Authorization': RADAR_SK }
             });
@@ -267,6 +240,7 @@
                     });
                 });
                 
+                // Start listeners in order
                 initMetadataListener();
                 initLocationListener();
             });
@@ -278,9 +252,11 @@
             snapshot.forEach((doc) => {
                 userMetadataCache[doc.id] = doc.data();
             });
+            //console.log("Metadata Cache Synced:", Object.keys(userMetadataCache).length, "users");
         });
     }
 
+    // -------- PATCHED FUNCTION: handles deletion, active SOS count, URL params, supports both field types --------
     function initLocationListener() {
         onSnapshot(collection(db, "user_locations"), (snapshot) => {
             snapshot.docChanges().forEach((change) => {
@@ -288,29 +264,26 @@
                 const id = change.doc.id;
                 const metadata = userMetadataCache[id] || {};
 
-                // 1. If document is actually deleted from Firestore
+                // --- REMOVED: Remove marker, log, update counts ---
                 if (change.type === 'removed') {
-                    removeTourist(id);
+                    if (touristMarkers[id]) {
+                        touristMarkers[id].remove();
+                        delete touristMarkers[id];
+                    }
+                    pushToLog('leave', 'Tourist Offline', id);
+                    delete userPreviousState[id];
+                    activeSosUsers.delete(id);
+                    document.getElementById("alert-count-display").innerText = activeSosUsers.size;
                     return;
                 }
 
-                // 2. Safely extract coordinates
-                const lng = (typeof data.longitude === 'number') ? data.longitude : (typeof data.lng === 'number' ? data.lng : null);
-                const lat = (typeof data.latitude === 'number') ? data.latitude : (typeof data.lat === 'number' ? data.lat : null);
-
-                // 3. Catch "Stop Tour" updates (Inactive flags or reset coordinates)
-                // We check common "stopped" flags. Adjust if your mobile app uses a specific field name.
-                const isStopped = data.active === false || data.status === 'stopped' || data.status === 'offline';
-                const isInvalidCoords = lng === null || lat === null || (lng === 0 && lat === 0);
-
-                if (isStopped || isInvalidCoords) {
-                    removeTourist(id);
-                    return;
-                }
-
-                // --- PROCEED WITH VALID TRACKING ---
+                // --- COORDINATE NORMALIZATION ---
+                const lng = (typeof data.longitude === 'number') ? data.longitude : (typeof data.lng === 'number' ? data.lng : 0);
+                const lat = (typeof data.latitude === 'number') ? data.latitude : (typeof data.lat === 'number' ? data.lat : 0);
                 const isSos = data.sos === true || String(data.sos).toLowerCase() === "true";
                 const prevState = userPreviousState[id] || { sos: false, insideZones: [] };
+
+                // Safety watcher/geofence logic unchanged...
 
                 const assignedId = metadata.geofenceassign;
                 if (assignedId) {
@@ -333,6 +306,9 @@
                         }
                     }
                 }
+
+                // Dynamic Logs (optional)
+                // ...retain your entry/exit logic if needed...
 
                 // --- SOS tracking: (Live count) ---
                 if (isSos && !prevState.sos) {
@@ -365,11 +341,14 @@
             document.getElementById("activetcount").innerText = Object.keys(touristMarkers).length;
         });
 
+        // --- Handle "Locate" param once markers possible ---
         handleLocateParams();
     }
 
     startSystem();
 </script>
+...
+<!-- The rest of your homepage.html remains the same -->
 </body>
 </html>
 
