@@ -225,7 +225,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
         import { 
-            getFirestore, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp 
+            getFirestore, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, doc, getDoc 
         } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -252,7 +252,21 @@
 
                     if (userData.sos === true || String(userData.sos).toLowerCase() === "true") {
                         try {
-                            // Log a new entry regardless of existing records
+                            // 🔴 NEW LOGIC: Fetch the actual coordinates from user_locations
+                            const locRef = doc(db, "user_locations", userId);
+                            const locSnap = await getDoc(locRef);
+                            
+                            let currentLat = 0;
+                            let currentLng = 0;
+                            
+                            if (locSnap.exists()) {
+                                const locData = locSnap.data();
+                                // Account for how Android saves the data
+                                currentLat = locData.latitude || locData.lat || 0;
+                                currentLng = locData.longitude || locData.lng || 0;
+                            }
+
+                            // Log a new entry with real coordinates
                             await addDoc(collection(db, "alerts"), {
                                 userId: userId,
                                 userName: userData.fullName || "Unknown User",
@@ -260,7 +274,7 @@
                                 type: "SOS - Emergency", 
                                 status: "Active",
                                 timestamp: serverTimestamp(),
-                                location: { lat: userData.lat || 0, lng: userData.lng || 0 }
+                                location: { lat: currentLat, lng: currentLng } // ✅ Pushing accurate data
                             });
                         } catch (error) {
                             console.error("Error creating history entry:", error);
