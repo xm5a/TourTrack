@@ -221,8 +221,7 @@
             </div>
         </div>
     </main>
-
-    <script type="module">
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
         import { 
             getFirestore, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, doc, getDoc 
@@ -241,32 +240,38 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const tableBody = document.getElementById('tableBody');
+        
+        // Anti-spam filter to prevent duplicate logs in the database
+        const processedAlerts = new Set();
 
-        // 1. Monitor users: Create a new alert entry every single time SOS is triggered
+        // 1. Monitor users: Create a new alert entry
         onSnapshot(collection(db, "users"), (snapshot) => {
             snapshot.docChanges().forEach(async (change) => {
-                // We act only when a user document is added or modified to 'sos: true'
-                if (change.type === "added" || change.type === "modified") {
-                    const userData = change.doc.data();
-                    const userId = change.doc.id;
+                const userData = change.doc.data();
+                const userId = change.doc.id;
+                
+                // Check if SOS is active
+                const isSos = userData.sos === true || String(userData.sos).toLowerCase() === "true";
 
-                    if (userData.sos === true || String(userData.sos).toLowerCase() === "true") {
+                if (isSos) {
+                    // Only process if we haven't just logged this exact emergency
+                    if (!processedAlerts.has(userId)) {
+                        processedAlerts.add(userId);
+
                         try {
-                            // 🔴 NEW LOGIC: Fetch the actual coordinates from user_locations
-                            const locRef = doc(db, "user_locations", userId);
-                            const locSnap = await getDoc(locRef);
+                            // 🔴 PULL REAL COORDINATES FROM user_locations
+                            const locSnap = await getDoc(doc(db, "user_locations", userId));
                             
                             let currentLat = 0;
                             let currentLng = 0;
                             
                             if (locSnap.exists()) {
                                 const locData = locSnap.data();
-                                // Account for how Android saves the data
                                 currentLat = locData.latitude || locData.lat || 0;
                                 currentLng = locData.longitude || locData.lng || 0;
                             }
 
-                            // Log a new entry with real coordinates
+                            // Write to the alerts history collection
                             await addDoc(collection(db, "alerts"), {
                                 userId: userId,
                                 userName: userData.fullName || "Unknown User",
@@ -274,11 +279,14 @@
                                 type: "SOS - Emergency", 
                                 status: "Active",
                                 timestamp: serverTimestamp(),
-                                location: { lat: currentLat, lng: currentLng } // ✅ Pushing accurate data
+                                location: { lat: currentLat, lng: currentLng } // ✅ Real GPS data saved!
                             });
                         } catch (error) {
                             console.error("Error creating history entry:", error);
                         }
+
+                        // Remove from anti-spam filter after 20 seconds
+                        setTimeout(() => processedAlerts.delete(userId), 20000);
                     }
                 }
             });
@@ -299,6 +307,7 @@
                         });
                     }
 
+                    // Build the URL using the saved GPS coordinates
                     const trackUrl = `homepage.html?trackLat=${alertData.location?.lat}&trackLng=${alertData.location?.lng}&focusUser=${alertData.userId}`;
 
                     const row = document.createElement('tr');
