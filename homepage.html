@@ -159,10 +159,12 @@
     // --- Ensure Map is Initialized ---
 // --- Ensure Map is Initialized ---
     // Use Radar.ui.map instead of new maplibregl.Map to properly resolve the style string
-    const map = Radar.ui.map({
+// --- Ensure Map is Initialized ---
+    const map = new maplibregl.Map({
         container: 'map-container',
-        style: 'radar-default-v1', 
-        center: [72.9781, 19.2183], // Defaulted to Thane/Mumbai area
+        // USE THE FULL URL HERE to prevent the GitHub Pages 404 error
+        style: 'https://api.radar.io/maps/styles/radar-default-v1', 
+        center: [72.9781, 19.2183], 
         zoom: 12
     });
 
