@@ -287,9 +287,9 @@
         </div>
     </div>
 
-    <script type="module">
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
@@ -304,7 +304,27 @@
         const db = getFirestore(app);
         const tableBody = document.getElementById("table-body");
 
-        // Real-time Data Sync
+        // Keep a cache of locations to update the table smoothly
+        const locationCache = {};
+
+        // 1. Listen for LIVE location changes separately
+        onSnapshot(collection(db, "user_locations"), (locSnapshot) => {
+            locSnapshot.forEach(doc => {
+                const locData = doc.data();
+                locationCache[doc.id] = {
+                    lat: locData.latitude || locData.lat || 0,
+                    lng: locData.longitude || locData.lng || 0
+                };
+                
+                // Update specific cell if the row already exists in the table
+                const coordCell = document.querySelector(`#row-${doc.id} .coord-cell`);
+                if (coordCell) {
+                    coordCell.innerText = `${locationCache[doc.id].lat.toFixed(4)}, ${locationCache[doc.id].lng.toFixed(4)}`;
+                }
+            });
+        });
+
+        // 2. Main Users Listener
         onSnapshot(collection(db, "users"), (snapshot) => {
             if (snapshot.empty) {
                 tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem;">No tourist data available.</td></tr>';
@@ -323,10 +343,14 @@
                 const statusIcon = isSOS ? "fa-triangle-exclamation" : "fa-circle-check";
                 const statusText = isSOS ? "SOS ALERT" : "ACTIVE";
 
+                // Pull from cache or use 0.000 if not yet loaded
+                const coords = locationCache[id] || { lat: 0, lng: 0 };
+                const coordDisplay = (coords.lat === 0 && coords.lng === 0) ? "No Active Tour" : `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+
                 tr.innerHTML = `
                     <td style="font-family:monospace; font-weight:bold; color:var(--accent-blue)">${id.substring(0,8)}</td>
                     <td><strong>${data.fullName || "N/A"}</strong></td>
-                    <td style="color:#6b7280">${(data.lat || 0).toFixed(4)}, ${(data.lng || 0).toFixed(4)}</td>
+                    <td class="coord-cell" style="color:#6b7280">${coordDisplay}</td>
                     <td><span class="badge ${badgeClass}"><i class="fa-solid ${statusIcon}"></i> ${statusText}</span></td>
                     <td>${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
                     <td class="action-buttons">
@@ -343,6 +367,8 @@
             if(confirm("Confirm deletion of this tourist record? This cannot be undone.")) {
                 try {
                     await deleteDoc(doc(db, "users", id));
+                    // Also cleanup location record if it exists
+                    await deleteDoc(doc(db, "user_locations", id));
                 } catch(e) { alert("Error: " + e.message); }
             }
         };
@@ -355,7 +381,7 @@
             const html = `
                 <div class="detail-row"><span class="detail-label">Full ID:</span> <span>${id}</span></div>
                 <div class="detail-row"><span class="detail-label">Name:</span> <span>${cols[1].innerText}</span></div>
-                <div class="detail-row"><span class="detail-label">Location:</span> <span>${cols[2].innerText}</span></div>
+                <div class="detail-row"><span class="detail-label">Live Location:</span> <span>${cols[2].innerText}</span></div>
                 <div class="detail-row"><span class="detail-label">Status:</span> <span>${cols[3].innerText}</span></div>
                 <button class="close-modal" onclick="closeModal()">Close Profile</button>
             `;
