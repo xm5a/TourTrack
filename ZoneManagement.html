@@ -301,22 +301,21 @@
                             geometry: f.geometry
                         });
                     }
-                    addZoneToUI(f.description, f.metadata?.riskLevel, `${f.metadata?.place}, ${f.metadata?.district}`, f.tag, f.externalId, f._id);
+                    addZoneToUI(f.description, `${f.metadata?.place}, ${f.metadata?.district}`, f.tag, f.externalId, f._id);
                 });
             } catch (e) { console.error(e); }
         }
 
-        function addZoneToUI(name, risk, loc, tag, extId, mapId) {
+        function addZoneToUI(name, loc, tag, extId, mapId) {
             const list = document.getElementById('zone-list');
             const li = document.createElement('li');
             li.className = 'zone-item';
-            const badgeClass = `badge-${risk || 'restricted'}`;
+            //const badgeClass = `badge-${risk || 'restricted'}`;
             
             li.innerHTML = `
                 <div class="zone-info">
                     <h3>${name}</h3>
                     <span class="zone-loc"><i class="fa-solid fa-location-dot"></i> ${loc}</span>
-                    <span class="badge ${badgeClass}">${risk === 'high' ? 'High-Risk' : risk}</span>
                 </div>
                 <button class="del-btn" onclick="removefence(this, '${tag}', '${extId}', '${mapId}')"><i class="fa-solid fa-trash"></i></button>
             `;
@@ -350,7 +349,7 @@
                     description: name,
                     type: 'polygon',
                     coordinates: feature.geometry.coordinates[0],
-                    metadata: { riskLevel: risk, state: state, district: district, place: place }
+                    metadata: { state: state, district: district, place: place }
                 };
 
                 const res = await fetch(`https://api.radar.io/v1/geofences/${tag}/${extId}`, {
