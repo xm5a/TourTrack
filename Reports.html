@@ -11,6 +11,7 @@
     <style>
         :root {
             --sidebar-bg: #111827;
+            --sidebar-hover: #1f2937;
             --accent-blue: #3b82f6;
             --bg-body: #f3f4f6;
             --glass-white: rgba(255, 255, 255, 0.98);
@@ -37,20 +38,20 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
+            z-index: 1000;
         }
 
-        .sidebar-header { padding: 2.5rem 1.5rem; font-weight: 700; font-size: 1.25rem; }
-
+        .sidebar-header { padding: 2.5rem 1.5rem; font-weight: 700; font-size: 1.25rem; display: flex; align-items: center; gap: 12px; }
         .sidebar-nav { list-style: none; margin-top: 0.5rem; }
         .sidebar-nav a {
             display: flex; align-items: center; padding: 14px 24px;
             color: #9ca3af; text-decoration: none; margin: 4px 16px;
             border-radius: 8px; font-size: 0.9rem; transition: 0.2s;
         }
-
+        .sidebar-nav a:hover, .sidebar-nav a.active { color: #fff; background-color: var(--sidebar-hover); }
         .sidebar-nav a.active {
             background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(31, 41, 55, 1) 100%);
-            color: #fff; box-shadow: inset 4px 0 0 var(--accent-blue);
+            box-shadow: inset 4px 0 0 var(--accent-blue);
         }
 
         /* --- MAIN CONTENT --- */
@@ -67,31 +68,36 @@
 
         .content-container { padding: 2.5rem; max-width: 1400px; margin: 0 auto; width: 100%; }
 
+        /* --- STAT CARDS --- */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-
-        .stat-card { background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; }
-        .stat-card h3 { font-size: 0.85rem; color: #6b7280; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .stat-card { background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: center; }
+        .stat-card h3 { font-size: 0.85rem; color: #6b7280; text-transform: uppercase; margin-bottom: 0.5rem; font-weight: 600; }
         .stat-card .value { font-size: 2rem; font-weight: 700; color: #111827; }
+        .stat-card small { margin-top: 4px; font-weight: 500; }
 
+        /* --- CHARTS --- */
         .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
-        .chart-card { background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; height: 400px; }
-        .chart-card h3 { font-size: 1rem; margin-bottom: 1.5rem; font-weight: 600; }
+        .chart-card { background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; min-height: 380px; }
+        .chart-card h3 { font-size: 1rem; margin-bottom: 1.5rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
 
-        .card { background: white; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; }
+        /* --- TABLE --- */
+        .card { background: white; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .table-header { padding: 1.5rem; font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid var(--border-color); }
-        
         .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th { background-color: #f9fafb; padding: 1rem 1.5rem; text-align: left; font-size: 0.75rem; color: #6b7280; text-transform: uppercase; }
-        .data-table td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; }
+        .data-table th { background-color: #f9fafb; padding: 1rem 1.5rem; text-align: left; font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
+        .data-table td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; color: #374151; }
 
-        .badge { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
 
         @media (max-width: 1100px) { .charts-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <nav class="sidebar">
-        <div class="sidebar-header">Safety Hub</div>
+        <div class="sidebar-header">
+            <i class="fa-solid fa-shield-halved" style="color: var(--accent-blue);"></i>
+            <span>Safety Hub</span>
+        </div>
         <ul class="sidebar-nav">
             <li><a href="homepage.html"><i class="fa-solid fa-house"></i> Dashboard</a></li>
             <li><a href="Alert History.html"><i class="fa-solid fa-bullhorn"></i> Alert History</a></li>
@@ -112,37 +118,60 @@
         
         <div class="content-container">
             <div class="stats-grid">
-                <div class="stat-card"><h3>Total Tourists</h3><p class="value" id="total-tourists">0</p></div>
-                <div class="stat-card"><h3>Active Alerts</h3><p class="value" id="total-alerts" style="color: #dc2626">0</p></div>
-                <div class="stat-card"><h3>System Health</h3><p class="value" style="color: #16a34a">98%</p></div>
+                <div class="stat-card">
+                    <h3>Total Tourists</h3>
+                    <p class="value" id="total-tourists">0</p>
+                    <small style="color: #6b7280;">Registered in system</small>
+                </div>
+                <div class="stat-card">
+                    <h3>Active Alerts</h3>
+                    <p class="value" id="total-alerts" style="color: #dc2626">0</p>
+                    <small style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> SOS Triggered</small>
+                </div>
+                <div class="stat-card">
+                    <h3>System Health</h3>
+                    <p class="value" id="system-health-value" style="color: #16a34a">100%</p>
+                    <small id="latency-display" style="color: #6b7280;">Latency: --ms</small>
+                </div>
             </div>
 
             <div class="charts-grid">
                 <div class="chart-card">
-                    <h3>Live Tourist Traffic (Last 60 Seconds)</h3>
+                    <h3><i class="fa-solid fa-wave-square" style="color:var(--accent-blue)"></i> Live Traffic (Users Online)</h3>
                     <div style="height: 300px;"><canvas id="liveTrafficChart"></canvas></div>
                 </div>
                 <div class="chart-card">
-                    <h3>Status Breakdown</h3>
+                    <h3><i class="fa-solid fa-chart-pie" style="color:#10b981"></i> Status Breakdown</h3>
                     <div style="height: 280px;"><canvas id="statusChart"></canvas></div>
                 </div>
             </div>
 
             <div class="card">
-                <div class="table-header">Registered Tourist Database</div>
-                <table class="data-table">
-                    <thead><tr><th>ID</th><th>Name</th><th>Coordinates</th><th>Status</th></tr></thead>
-                    <tbody id="report-table-body">
-                        <tr><td colspan="4" style="text-align:center; padding:3rem;">Loading live data...</td></tr>
-                    </tbody>
-                </table>
+                <div class="table-header">Real-time Tourist Roster</div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Current Coordinates</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-table-body">
+                            <tr><td colspan="4" style="text-align:center; padding:3rem; color:#9ca3af;">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Synchronizing with database...
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBzgUTcdlt3DOQvnNsv4f_05sxJt0DUsYg",
@@ -159,69 +188,98 @@
         let statusChartInstance = null;
         let trafficChartInstance = null;
         let currentTouristCount = 0;
+        const locationCache = {};
 
+        // --- 1. INITIALIZE CHARTS ---
         function initCharts() {
-            // Traffic Chart
             const ctxVol = document.getElementById('liveTrafficChart').getContext('2d');
             trafficChartInstance = new Chart(ctxVol, {
                 type: 'line',
                 data: {
-                    labels: Array(12).fill(''), // Pre-fill 12 slots for a 60-second window (5s interval)
+                    labels: Array(12).fill(''), 
                     datasets: [{
                         label: 'Live Users',
                         data: Array(12).fill(0),
                         borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.05)',
                         tension: 0.4,
                         fill: true,
-                        pointRadius: 3
+                        pointRadius: 4,
+                        pointBackgroundColor: '#3b82f6'
                     }]
                 },
                 options: {
                     maintainAspectRatio: false,
-                    animation: { duration: 1000 },
                     scales: { 
-                        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                        y: { beginAtZero: true, ticks: { stepSize: 1, color: '#9ca3af' }, grid: { borderDash: [5, 5] } },
                         x: { display: false } 
                     },
                     plugins: { legend: { display: false } }
                 }
             });
 
-            // Status Chart
             const ctxStat = document.getElementById('statusChart').getContext('2d');
             statusChartInstance = new Chart(ctxStat, {
                 type: 'doughnut',
                 data: {
                     labels: ['Safe', 'SOS'],
                     datasets: [{
-                        data: [0, 0],
+                        data: [1, 0],
                         backgroundColor: ['#10b981', '#ef4444'],
+                        hoverOffset: 4,
                         borderWidth: 0
                     }]
                 },
-                options: { maintainAspectRatio: false, cutout: '70%' }
+                options: { maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom' } } }
             });
         }
 
-        // Heartbeat function to update the line chart every 5 seconds
-        function startHeartbeat() {
-            setInterval(() => {
-                if (trafficChartInstance) {
-                    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    trafficChartInstance.data.labels.push(now);
-                    trafficChartInstance.data.datasets[0].data.push(currentTouristCount);
-                    
-                    // Maintain fixed window of 12 points (1 minute of history)
-                    trafficChartInstance.data.labels.shift();
-                    trafficChartInstance.data.datasets[0].data.shift();
-                    
-                    trafficChartInstance.update('none'); // Update without full animation reset
-                }
-            }, 5000); 
+        // --- 2. LATENCY MONITOR ---
+        async function checkLatency() {
+            const start = Date.now();
+            try {
+                // Ping Firebase to see response time
+                await getDoc(doc(db, "system_metadata", "health_ping")); 
+                const latency = Date.now() - start;
+                document.getElementById('latency-display').innerText = `Latency: ${latency}ms`;
+            } catch (e) {
+                const latency = Date.now() - start;
+                document.getElementById('latency-display').innerText = `Latency: ${latency}ms`;
+            }
         }
 
+        // --- 3. DATA FRESHNESS & LIVE UPDATES ---
         function startLiveUpdates() {
+            // Monitor coordinates and timestamps from user_locations
+            onSnapshot(collection(db, "user_locations"), (locSnapshot) => {
+                const now = Date.now();
+                const staleThreshold = 60 * 1000; // 1 minute
+                let healthyUsers = 0;
+                const totalLiveUsers = locSnapshot.size;
+
+                locSnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    locationCache[doc.id] = {
+                        lat: data.latitude || data.lat || 0,
+                        lng: data.longitude || data.lng || 0
+                    };
+                    
+                    if (now - (data.timestamp || 0) < staleThreshold) {
+                        healthyUsers++;
+                    }
+                });
+
+                // System Health Calculation
+                let healthPercent = totalLiveUsers === 0 ? 100 : Math.round((healthyUsers / totalLiveUsers) * 100);
+                const healthEl = document.getElementById('system-health-value');
+                healthEl.innerText = `${healthPercent}%`;
+                
+                if (healthPercent > 80) healthEl.style.color = "#16a34a";
+                else if (healthPercent > 50) healthEl.style.color = "#f59e0b";
+                else healthEl.style.color = "#dc2626";
+            });
+
+            // Monitor user profiles and SOS status
             onSnapshot(collection(db, "users"), (snapshot) => {
                 let sosCount = 0;
                 let safeCount = 0;
@@ -230,20 +288,29 @@
 
                 snapshot.forEach((doc) => {
                     const data = doc.data();
+                    const id = doc.id;
                     const isSOS = data.sos === true || String(data.sos).toLowerCase() === "true";
                     isSOS ? sosCount++ : safeCount++;
 
+                    const coords = locationCache[id] || { lat: 0, lng: 0 };
+                    const coordStr = (coords.lat === 0) ? '---' : `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+
                     tableRows += `<tr>
-                        <td style="font-family:monospace; color:#3b82f6;">${doc.id.substring(0,8)}</td>
+                        <td style="font-family:monospace; font-weight:bold; color:var(--accent-blue);">${id.substring(0,8)}</td>
                         <td><strong>${data.fullName || "User"}</strong></td>
-                        <td style="color:#6b7280">${(data.lat || 0).toFixed(4)}, ${(data.lng || 0).toFixed(4)}</td>
-                        <td><span class="badge" style="background:${isSOS ? '#fee2e2' : '#dcfce7'}; color:${isSOS ? '#dc2626' : '#059669'};">${isSOS ? 'SOS ALERT' : 'ACTIVE'}</span></td>
+                        <td style="color:#6b7280">${coordStr}</td>
+                        <td>
+                            <span class="badge" style="background:${isSOS ? '#fef2f2' : '#f0fdf4'}; color:${isSOS ? '#dc2626' : '#16a34a'};">
+                                <i class="fa-solid ${isSOS ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i>
+                                ${isSOS ? 'SOS ALERT' : 'ACTIVE'}
+                            </span>
+                        </td>
                     </tr>`;
                 });
 
                 document.getElementById('total-tourists').innerText = currentTouristCount;
                 document.getElementById('total-alerts').innerText = sosCount;
-                document.getElementById('report-table-body').innerHTML = tableRows;
+                document.getElementById('report-table-body').innerHTML = tableRows || '<tr><td colspan="4" style="text-align:center;">No data found</td></tr>';
 
                 if (statusChartInstance) {
                     statusChartInstance.data.datasets[0].data = [safeCount, sosCount];
@@ -252,9 +319,23 @@
             });
         }
 
+        // --- 4. TRAFFIC CHART HEARTBEAT ---
+        function startHeartbeat() {
+            setInterval(() => {
+                if (trafficChartInstance) {
+                    trafficChartInstance.data.datasets[0].data.push(currentTouristCount);
+                    trafficChartInstance.data.datasets[0].data.shift();
+                    trafficChartInstance.update('none');
+                }
+            }, 5000); // Record point every 5 seconds
+        }
+
+        // --- START SYSTEM ---
         initCharts();
         startLiveUpdates();
         startHeartbeat();
+        checkLatency();
+        setInterval(checkLatency, 10000); // Check latency every 10 seconds
     </script>
 </body>
 </html>
