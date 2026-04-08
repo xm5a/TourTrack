@@ -342,7 +342,7 @@
 
             map.once('draw.create', async (e) => {
                 const feature = e.features[0];
-                const risk = document.getElementById('zone-risk').value;
+                //const risk = document.getElementById('zone-risk').value;
                 const extId = 'zone-' + Date.now();
                 const tag = 'safety-zone';
 
@@ -360,7 +360,7 @@
                 });
 
                 if(res.ok) {
-                    addZoneToUI(name, risk, `${place}, ${district}`, tag, extId, feature.id);
+                    addZoneToUI(name, `${place}, ${district}`, tag, extId, feature.id);
                 } else {
                     alert("Failed to save geofence.");
                     draw.delete(feature.id);
